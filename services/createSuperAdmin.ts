@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import UserModel from '../models/user';
-import dotenv from "dotenv"
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -13,7 +13,7 @@ const createSuperAdmin = async () => {
       await mongoose.connect(process.env.MONGODB_URI || '');
       console.log('Connected to MongoDB');
     }
-     await UserModel.create({
+    await UserModel.create({
       username: 'superadmin',
       email: 'habeebowoade8@gmail.com',
       password,

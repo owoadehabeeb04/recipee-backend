@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendOtp } from '../services/emailService';
 
+// register user functionality
 export const registerUser = async (req: any, res: any) => {
   try {
     const { username, email, password } = req.body;
@@ -24,9 +25,15 @@ export const registerUser = async (req: any, res: any) => {
     await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser._id },
+      {
+        id: newUser._id,
+        role: newUser.role,
+        email: newUser.email,
+        name: newUser.username,
+        _id: newUser._id,
+      },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: '1d' }
+      { expiresIn: '7d' }
     );
 
     return res.status(201).json({
@@ -48,6 +55,7 @@ export const registerUser = async (req: any, res: any) => {
   }
 };
 
+// register admin functionality
 export const registerAdmin = async (req: any, res: any) => {
   try {
     const { username, email, password, role } = req.body;
@@ -67,9 +75,15 @@ export const registerAdmin = async (req: any, res: any) => {
     await newUser.save();
 
     const token = jwt.sign(
-      { id: newUser._id },
+      {
+        id: newUser._id,
+        role: newUser.role,
+        name: newUser.username,
+        email: newUser.email,
+        _id: newUser._id, // Also add _id to match what your controller expects
+      },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: '1d' }
+      { expiresIn: '7d' }
     );
 
     return res.status(201).json({
@@ -91,6 +105,7 @@ export const registerAdmin = async (req: any, res: any) => {
   }
 };
 
+// login user functionality
 export const loginUser = async (req: any, res: any) => {
   try {
     const { email, password } = req.body;
@@ -106,19 +121,25 @@ export const loginUser = async (req: any, res: any) => {
     }
 
     const token = jwt.sign(
-      { id: findUser._id },
+      {
+        id: findUser._id,
+        role: findUser.role,
+        email: findUser.email,
+        name: findUser.username,
+        _id: findUser._id,
+        // Also add _id to match what your controller expects
+      },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: '1d' }
+      { expiresIn: '7d' }
     );
-
+    const userObject: any = findUser.toObject()
+      delete userObject.password;
+    
+      delete userObject.otp;
+    
     return res.status(200).json({
       message: 'Login successful',
-      user: {
-        id: findUser._id,
-        username: findUser.username,
-        email: findUser.email,
-        role: findUser.role,
-      },
+      user: userObject,
       access_token: token,
     });
   } catch (error) {

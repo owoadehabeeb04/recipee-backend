@@ -5,6 +5,8 @@ import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import { userRouter } from './Routes/auth';
+import { RecipeRouter } from './Routes/recipe';
+import { UserRouter } from './Routes/user';
 // import cookieParser from "cookie-parser"
 
 const app = express();
@@ -25,7 +27,8 @@ app.use(
 );
 app.use(express.json());
 app.use('/auth', userRouter);
-
+app.use('/recipes', RecipeRouter);
+app.use('/user', UserRouter)
 // Mongoose Connection
 
 if (!mongoUri) {
