@@ -12,7 +12,8 @@ import { FavoriteRouter } from './Routes/favorites';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000' ;
+const PRODUCTION_URL ="https://recipe-app-kappa-cyan.vercel.app"
 const mongoUri = process.env.MONGODB_URI;
 
 if (!mongoUri) {
@@ -21,7 +22,7 @@ if (!mongoUri) {
 
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: [FRONTEND_URL, PRODUCTION_URL],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
