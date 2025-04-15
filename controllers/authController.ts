@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import UserModel from '../models/user';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendOtp } from '../services/emailService';

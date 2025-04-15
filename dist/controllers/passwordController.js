@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.changePassword = exports.resetPassword = exports.verifyOTP = exports.verifyEmail = void 0;
 const user_1 = __importDefault(require("../models/user"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const crypto_1 = __importDefault(require("crypto"));
 const emailService_1 = require("../services/emailService");
 // Helper function to generate OTP
@@ -76,7 +76,7 @@ exports.verifyOTP = verifyOTP;
 const resetPassword = async (req, res) => {
     try {
         const { email, password } = req.body;
-        const hashPassword = await bcrypt_1.default.hash(password, 10);
+        const hashPassword = await bcryptjs_1.default.hash(password, 10);
         const user = await user_1.default.findOne({ email });
         if (!user) {
             return res.status(400).json({
@@ -121,14 +121,14 @@ const changePassword = async (req, res) => {
                 message: 'User not found',
             });
         }
-        const isPasswordValid = await bcrypt_1.default.compare(currentPassword, user.password);
+        const isPasswordValid = await bcryptjs_1.default.compare(currentPassword, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({
                 success: false,
                 message: 'Current password is incorrect',
             });
         }
-        const hashedNewPassword = await bcrypt_1.default.hash(newPassword, 10);
+        const hashedNewPassword = await bcryptjs_1.default.hash(newPassword, 10);
         user.password = hashedNewPassword;
         await user.save();
         return res.status(200).json({

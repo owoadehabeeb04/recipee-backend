@@ -5,7 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.loginUser = exports.registerAdmin = exports.registerUser = void 0;
 const user_1 = __importDefault(require("../models/user"));
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 //  // migrate-add-timestamps.ts
 // import mongoose from 'mongoose';
@@ -68,7 +68,7 @@ const registerUser = async (req, res) => {
         if (existingUser) {
             return res.status(401).json({ message: 'User already exists' });
         }
-        const hashPassword = await bcrypt_1.default.hash(password, 10);
+        const hashPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = new user_1.default({
             username,
             email,
@@ -110,7 +110,7 @@ const registerAdmin = async (req, res) => {
         if (existingUser) {
             return res.status(401).json({ message: 'User already exists' });
         }
-        const hashPassword = await bcrypt_1.default.hash(password, 10);
+        const hashPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = new user_1.default({
             username,
             email,
@@ -153,7 +153,7 @@ const loginUser = async (req, res) => {
         if (!findUser) {
             return res.status(401).json({ message: 'Wrong credentials' });
         }
-        const validPassword = await bcrypt_1.default.compare(password, findUser.password);
+        const validPassword = await bcryptjs_1.default.compare(password, findUser.password);
         if (!validPassword) {
             return res.status(401).json({ message: 'Wrong credentials' });
         }

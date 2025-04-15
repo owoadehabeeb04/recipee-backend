@@ -6,19 +6,19 @@
     "node": "18.x"
   },
   "scripts": {
-  "test": "echo \"Error: no test specified\" && exit 1",
-  "start": "node dist/index.js",
-  "dev": "nodemon index.ts",
-  "build": "tsc",
-  "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\""
-},
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/index.js",
+    "dev": "nodemon index.ts",
+    "build": "tsc",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\""
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "axios": "^1.8.1",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
@@ -30,7 +30,7 @@
     "typescript": "^5.8.2"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
     "@types/jsonwebtoken": "^9.0.9",
