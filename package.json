@@ -3,16 +3,17 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon index.ts",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\""
-  },
+  "test": "echo \"Error: no test specified\" && exit 1",
+  "start": "node dist/index.js",
+  "dev": "nodemon index.ts",
+  "build": "tsc",
+  "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\""
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@tanstack/react-query": "^5.68.0",
     "axios": "^1.8.1",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
