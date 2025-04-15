@@ -5,7 +5,8 @@ import jwt from 'jsonwebtoken';
 export const verifyToken = (req: any, res: any, next: NextFunction) => {
   // Check if Authorization header exists
   const authHeader = req.headers.authorization;
-
+  // console.log(req.headers, 'REQqqqq');
+  console.log('AUTH HEADER', authHeader);
   if (!authHeader) {
     return res.status(401).json({
       success: false,
@@ -47,7 +48,6 @@ export const verifyToken = (req: any, res: any, next: NextFunction) => {
 };
 export const optionalAuth = (req: any, res: any, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  console.log('Raw Authorization header:', authHeader);
 
   // If there's no Authorization header, continue without setting req.user
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -84,7 +84,7 @@ export const optionalAuth = (req: any, res: any, next: NextFunction) => {
 // function to check if a user is an admin
 export const isAdmin = (req: any, res: any, next: any) => {
   const role = req.user.role;
-  if (role !== 'admin' && role !== 'super admin') {
+  if (role !== 'admin' && role !== 'super_admin') {
     return res.status(403).json({ message: 'Requires admin privileges' });
   }
   next();
@@ -93,8 +93,16 @@ export const isAdmin = (req: any, res: any, next: any) => {
 // function to check if a user is a super admin
 export const isSuperAdmin = (req: any, res: any, next: any) => {
   const role = req.user.role;
-  if (role !== 'super admin') {
+  console.log('role', role);
+  if (role !== 'super_admin' || role !== 'super_admin') {
     return res.status(403).json({ message: 'Requires super admin privilege' });
+  }
+  next();
+};
+
+export const isUser = (req: any, res: any, next: any) => {
+  if (req?.user?.role !== 'user') {
+    return res.status(403).json({ message: 'Requires user privileges only' });
   }
   next();
 };

@@ -4,7 +4,66 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendOtp } from '../services/emailService';
+//  // migrate-add-timestamps.ts
+// import mongoose from 'mongoose';
 
+// async function addTimestampsToUsers() {
+//   try {
+//     console.log('Connecting to MongoDB...');
+//     await mongoose.connect(process.env.MONGODB_URI || 'your-connection-string');
+//     console.log('Connected to MongoDB');
+
+//     // Find all users without timestamps
+//     const usersWithoutTimestamps = await UserModel.find({
+//       $or: [
+//         { createdAt: { $exists: false } },
+//         { updatedAt: { $exists: false } }
+//       ]
+//     });
+
+//     console.log(`Found ${usersWithoutTimestamps.length} users without timestamps`);
+
+//     // Update each user
+//     let updatedCount = 0;
+//     for (const user of usersWithoutTimestamps) {
+//       const now = new Date();
+
+//       // If _id contains a timestamp, extract it for a more accurate createdAt
+//       let createdAt = now;
+//       if (mongoose.Types.ObjectId.isValid(user._id as string)) {
+//         const timestamp = Math.floor(
+//           parseInt((user._id as string).toString().substring(0, 8), 16)
+//         );
+//         if (timestamp) {
+//           createdAt = new Date(timestamp * 1000);
+//         }
+//       }
+
+//       // Update the user with timestamps
+//       await UserModel.updateOne(
+//         { _id: user._id },
+//         {
+//           $set: {
+//             createdAt: createdAt,
+//             updatedAt: now
+//           }
+//         }
+//       );
+//       updatedCount++;
+//       console.log(`Updated user: ${user.username} (${updatedCount}/${usersWithoutTimestamps.length})`);
+//     }
+
+//     console.log(`Successfully updated ${updatedCount} users with timestamps`);
+//   } catch (error) {
+//     console.error('Error migrating timestamps:', error);
+//   } finally {
+//     await mongoose.disconnect();
+//     console.log('Disconnected from MongoDB');
+//   }
+// }
+
+// // Run the migration
+// addTimestampsToUsers();
 // register user functionality
 export const registerUser = async (req: any, res: any) => {
   try {
@@ -132,11 +191,11 @@ export const loginUser = async (req: any, res: any) => {
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
     );
-    const userObject: any = findUser.toObject()
-      delete userObject.password;
-    
-      delete userObject.otp;
-    
+    const userObject: any = findUser.toObject();
+    delete userObject.password;
+
+    delete userObject.otp;
+
     return res.status(200).json({
       message: 'Login successful',
       user: userObject,

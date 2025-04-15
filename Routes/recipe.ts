@@ -5,14 +5,16 @@ import {
   getSingleRecipe,
   getStatistics,
   getYourRecentRecipes,
-} from '../controllers/recipesController';
+} from '../controllers/allRecipesController/recipesController';
 import {
   deleteRecipe,
   editRecipe,
   getAdminRecipes,
-} from '../controllers/adminRecipesController';
+  togglePublishStatus,
+} from '../controllers/allRecipesController/adminRecipesController';
 import {
   isAdmin,
+  isSuperAdmin,
   optionalAuth,
   verifyToken,
 } from '../middleware/authMIddleware';
@@ -24,10 +26,14 @@ router.get('/recipeStats', verifyToken, getStatistics);
 router.get('/recentRecipes', verifyToken, getYourRecentRecipes);
 
 // Admin-only routes
-router.patch('/edit-recipe', verifyToken, isAdmin, editRecipe);
+router.patch('/edit-recipe/:id', verifyToken, isAdmin, editRecipe);
 router.post('/create-recipe', verifyToken, isAdmin, createRecipe);
-router.delete('/delete-recipe', verifyToken, isAdmin, deleteRecipe);
+router.delete('/delete-recipe/:id', verifyToken, isAdmin, deleteRecipe);
 router.get('/adminRecipes', verifyToken, isAdmin, getAdminRecipes);
+
+// super admin only routes
+
+router.patch('/publish/:id', verifyToken, isSuperAdmin, togglePublishStatus);
 
 // Public routes (no authentication needed)
 router.get('/', optionalAuth, getAllRecipes);

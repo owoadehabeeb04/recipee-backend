@@ -1,7 +1,8 @@
 import { Express } from 'express';
-import RecipeModel from '../models/recipe';
-import UserModel from '../models/user';
+
 import mongoose from 'mongoose';
+import RecipeModel from '../../models/recipe';
+import UserModel from '../../models/user';
 
 // GET ALL RECIPES
 export const getAllRecipes = async (req: any, res: any) => {

@@ -1,5 +1,5 @@
 import { Express } from 'express';
-import RecipeModel from '../models/recipe';
+import RecipeModel from '../../models/recipe';
 import mongoose from 'mongoose';
 
 // Delete A RECIPE
@@ -68,6 +68,7 @@ export const editRecipe = async (req: any, res: any) => {
       'servings',
       'ingredients',
       'steps',
+      'tips',
       'featuredImage',
       'isPublished',
     ];
@@ -170,6 +171,53 @@ export const getAdminRecipes = async (req: any, res: any) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to retrieve admin recipes',
+      error: error instanceof Error ? error.message : 'Server error',
+    });
+  }
+};
+
+export const togglePublishStatus = async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    console.log('id from endpoint', id);
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid recipe ID format',
+      });
+    }
+
+    const recipeToToggle = await RecipeModel.findById(id);
+
+    console.log(recipeToToggle);
+    if (!recipeToToggle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Recipe not found',
+      });
+    }
+
+    const newPublishStatus = !recipeToToggle.isPublished;
+
+    const updatedRecipe = await RecipeModel.findByIdAndUpdate(
+      id,
+      { isPublished: newPublishStatus },
+      { new: true }
+    );
+    return res.status(200).json({
+      success: true,
+      message: `Recipe is now ${newPublishStatus ? 'published' : 'in draft mode'}`,
+      data: {
+        recipeId: id,
+        isPublished: newPublishStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting admin recipes:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to Publish recipe',
       error: error instanceof Error ? error.message : 'Server error',
     });
   }

@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { userRouter } from './Routes/auth';
 import { RecipeRouter } from './Routes/recipe';
 import { UserRouter } from './Routes/user';
+import { FavoriteRouter } from './Routes/favorites';
 // import cookieParser from "cookie-parser"
 
 const app = express();
@@ -21,14 +22,17 @@ if (!mongoUri) {
 app.use(
   cors({
     origin: FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use('/auth', userRouter);
 app.use('/recipes', RecipeRouter);
-app.use('/user', UserRouter)
+app.use('/users', UserRouter);
+app.use('/favorites', FavoriteRouter);
 // Mongoose Connection
 
 if (!mongoUri) {

@@ -108,53 +108,56 @@ export const resetPassword = async (req: any, res: any) => {
 export const changePassword = async (req: any, res: any) => {
   try {
     const { email, currentPassword, newPassword } = req.body;
-    
+
     if (!email || !currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Email, current password and new password are required'
+        message: 'Email, current password and new password are required',
       });
     }
-    
+
     if (currentPassword === newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be different from current password'
+        message: 'New password must be different from current password',
       });
     }
-    
+
     const user = await UserModel.findOne({ email });
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'User not found'
+        message: 'User not found',
       });
     }
-    
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+    const isPasswordValid = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
     if (!isPasswordValid) {
       return res.status(400).json({
         success: false,
-        message: 'Current password is incorrect'
+        message: 'Current password is incorrect',
       });
     }
-    
+
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-    
+
     user.password = hashedNewPassword;
-    
+
     await user.save();
-    
+
     return res.status(200).json({
       success: true,
-      message: 'Password changed successfully'
+      message: 'Password changed successfully',
     });
   } catch (error) {
     console.error('Change password error:', error);
     return res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
     });
   }
 };
