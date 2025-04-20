@@ -8,8 +8,10 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const recipe_1 = __importDefault(require("../../models/recipe"));
 const user_1 = __importDefault(require("../../models/user"));
 // GET ALL RECIPES
+console.log('ADMIN IOS HEREEEE!! ');
 const getAllRecipes = async (req, res) => {
     var _a;
+    console.log('GOTTEN ALL RECIPES DONT PLAY MAN!');
     try {
         // pagination to prevent bulky recipes
         const page = parseInt(req.query.page) || 1;
@@ -87,10 +89,12 @@ exports.getAllRecipes = getAllRecipes;
 // CREATE A RECIPE
 const createRecipe = async (req, res) => {
     var _a;
+    console.log('GOTTEN THE CREATE RECIPE MAN !!!! ALHAMDULILLAH');
     try {
-        const { title, servings, description, difficulty, category, cookingTime, steps, ingredients, featuredImage, tips, } = req.body;
+        console.log('REQUEST BODY:', JSON.stringify(req.body, null, 2));
+        const { title, servings, description, difficulty, category, cookingTime, steps, ingredients, featuredImage, tips, nutrition, } = req.body;
+        console.log('request body', req.body);
         const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
-        // Make sure the ID is in the correct format for MongoDB
         let formattedAdminId;
         try {
             // If adminId is a string, convert it to ObjectId
@@ -118,8 +122,15 @@ const createRecipe = async (req, res) => {
                 message: 'Admin user not found',
             });
         }
-        // Validation checking (you already have this)
-        // Make sure the admin field is set to the entire document, not just the ID
+        console.log(nutrition, 'nutrtion');
+        const nutritionData = {
+            calories: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.calories) || 0),
+            protein: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.protein) || 0),
+            carbs: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.carbs) || 0),
+            fat: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.fat) || 0),
+            fiber: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.fiber) || 0),
+            sugar: Number((nutrition === null || nutrition === void 0 ? void 0 : nutrition.sugar) || 0)
+        };
         const newRecipe = new recipe_1.default({
             admin: adminDetail._id,
             adminDetails: {
@@ -139,8 +150,10 @@ const createRecipe = async (req, res) => {
             featuredImage: featuredImage || '',
             isPublished: false,
             tips,
+            nutrition: nutritionData,
         });
         const savedRecipe = await newRecipe.save();
+        console.log('saved recipe', savedRecipe);
         // Debug the saved recipe
         // console.log("Saved recipe admin field:", savedRecipe.admin);
         // console.log("Saved recipe adminDetails:", savedRecipe.adminDetails);
@@ -161,6 +174,7 @@ exports.createRecipe = createRecipe;
 // GET RECIPE STATISTICS
 const getStatistics = async (req, res) => {
     var _a;
+    console.log('get statistics i pray it gets here ');
     try {
         const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
         const allRecipes = await recipe_1.default.countDocuments();
@@ -216,6 +230,7 @@ const getSingleRecipe = async (req, res) => {
         const { id } = req.params;
         const userRole = ((_a = req.user) === null || _a === void 0 ? void 0 : _a.role) || 'user';
         const recipe = await recipe_1.default.findById(id);
+        console.log({ recipe });
         if (!recipe) {
             return res.status(404).json({
                 success: false,

@@ -16,13 +16,15 @@ const favorites_1 = require("./Routes/favorites");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const PRODUCTION_URL = "https://recipe-app-kappa-cyan.vercel.app";
 const mongoUri = process.env.MONGODB_URI;
 if (!mongoUri) {
     throw new Error('MONGODB_URI is not defined in environment variables');
 }
 app.use((0, cors_1.default)({
-    origin: FRONTEND_URL,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    // origin: [FRONTEND_URL, PRODUCTION_URL],
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH',],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
 }));

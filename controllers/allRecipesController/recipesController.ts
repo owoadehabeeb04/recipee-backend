@@ -5,7 +5,9 @@ import RecipeModel from '../../models/recipe';
 import UserModel from '../../models/user';
 
 // GET ALL RECIPES
+console.log('ADMIN IOS HEREEEE!! ')
 export const getAllRecipes = async (req: any, res: any) => {
+  console.log('GOTTEN ALL RECIPES DONT PLAY MAN!')
   try {
     // pagination to prevent bulky recipes
     const page = parseInt(req.query.page as string) || 1;
@@ -107,6 +109,7 @@ export const createRecipe = async (req: any, res: any) => {
       tips,
       nutrition,
     } = req.body;
+    console.log('request body', req.body)
 
     const adminId = req.user?._id;
 
@@ -195,6 +198,7 @@ export const createRecipe = async (req: any, res: any) => {
 
 // GET RECIPE STATISTICS
 export const getStatistics = async (req: any, res: any) => {
+  console.log('get statistics i pray it gets here ')
   try {
     const adminId = req.user?._id;
 

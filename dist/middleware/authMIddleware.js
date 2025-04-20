@@ -87,7 +87,7 @@ exports.isAdmin = isAdmin;
 const isSuperAdmin = (req, res, next) => {
     const role = req.user.role;
     console.log('role', role);
-    if (role !== 'super_admin' || role !== 'super_admin') {
+    if (role !== 'super_admin') {
         return res.status(403).json({ message: 'Requires super admin privilege' });
     }
     next();

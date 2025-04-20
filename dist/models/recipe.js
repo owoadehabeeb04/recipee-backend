@@ -46,6 +46,14 @@ const recipeSchema = new mongoose_1.default.Schema({
     steps: { type: [String], required: true },
     tips: { type: [String], required: true },
     isPublished: { type: Boolean, default: false },
+    nutrition: {
+        calories: { type: Number, default: 0 },
+        protein: { type: Number, default: 0 },
+        carbs: { type: Number, default: 0 },
+        fat: { type: Number, default: 0 },
+        fiber: { type: Number, default: 0 },
+        sugar: { type: Number, default: 0 }
+    },
     ratings: [
         {
             userId: { type: String },
