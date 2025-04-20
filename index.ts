@@ -22,7 +22,8 @@ if (!mongoUri) {
 
 app.use(
   cors({
-    origin: [FRONTEND_URL, PRODUCTION_URL],
+    // origin: [FRONTEND_URL, PRODUCTION_URL],
+    origin: ['*'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH',],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
