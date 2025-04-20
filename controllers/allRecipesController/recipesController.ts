@@ -90,7 +90,10 @@ export const getAllRecipes = async (req: any, res: any) => {
 };
 // CREATE A RECIPE
 export const createRecipe = async (req: any, res: any) => {
+  console.log('GOTTEN THE CREATE RECIPE MAN !!!! ALHAMDULILLAH')
   try {
+    console.log('REQUEST BODY:', JSON.stringify(req.body, null, 2));
+
     const {
       title,
       servings,
@@ -102,11 +105,11 @@ export const createRecipe = async (req: any, res: any) => {
       ingredients,
       featuredImage,
       tips,
+      nutrition,
     } = req.body;
 
     const adminId = req.user?._id;
 
-    // Make sure the ID is in the correct format for MongoDB
     let formattedAdminId;
     try {
       // If adminId is a string, convert it to ObjectId
@@ -137,9 +140,17 @@ export const createRecipe = async (req: any, res: any) => {
       });
     }
 
-    // Validation checking (you already have this)
 
-    // Make sure the admin field is set to the entire document, not just the ID
+    console.log(nutrition, 'nutrtion')
+    const nutritionData = {
+      calories: Number(nutrition?.calories || 0),
+      protein: Number(nutrition?.protein || 0),
+      carbs: Number(nutrition?.carbs || 0),
+      fat: Number(nutrition?.fat || 0),
+      fiber: Number(nutrition?.fiber || 0),
+      sugar: Number(nutrition?.sugar || 0)
+    };
+
     const newRecipe = new RecipeModel({
       admin: adminDetail._id,
       adminDetails: {
@@ -159,9 +170,11 @@ export const createRecipe = async (req: any, res: any) => {
       featuredImage: featuredImage || '',
       isPublished: false,
       tips,
+      nutrition: nutritionData,
     });
 
     const savedRecipe = await newRecipe.save();
+    console.log('saved recipe', savedRecipe)
 
     // Debug the saved recipe
     // console.log("Saved recipe admin field:", savedRecipe.admin);
@@ -238,6 +251,7 @@ export const getSingleRecipe = async (req: any, res: any) => {
     const userRole = req.user?.role || 'user';
 
     const recipe = await RecipeModel.findById(id);
+    console.log({recipe})
 
     if (!recipe) {
       return res.status(404).json({

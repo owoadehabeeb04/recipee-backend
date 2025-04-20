@@ -72,7 +72,7 @@ export const registerUser = async (req: any, res: any) => {
 
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
-      return res.status(401).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -121,7 +121,7 @@ export const registerAdmin = async (req: any, res: any) => {
 
     const existingUser = await UserModel.findOne({ email });
     if (existingUser) {
-      return res.status(401).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);

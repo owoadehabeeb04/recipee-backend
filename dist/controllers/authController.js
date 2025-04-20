@@ -66,7 +66,7 @@ const registerUser = async (req, res) => {
         console.log('Received registration request:', { username, email });
         const existingUser = await user_1.default.findOne({ email });
         if (existingUser) {
-            return res.status(401).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'User already exists' });
         }
         const hashPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = new user_1.default({
@@ -108,7 +108,7 @@ const registerAdmin = async (req, res) => {
         const { username, email, password, role } = req.body;
         const existingUser = await user_1.default.findOne({ email });
         if (existingUser) {
-            return res.status(401).json({ message: 'User already exists' });
+            return res.status(400).json({ message: 'User already exists' });
         }
         const hashPassword = await bcryptjs_1.default.hash(password, 10);
         const newUser = new user_1.default({
