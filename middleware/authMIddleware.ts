@@ -89,12 +89,22 @@ export const isAdmin = (req: any, res: any, next: any) => {
   }
   next();
 };
+// function to check if a user is an admin or user
+export const isAdminOrUser = (req: any, res: any, next: any) => {
+  const role = req.user.role;
+  if (role !== 'admin' && role !== 'user') {
+    return res
+      .status(403)
+      .json({ message: 'Requires admin or user privileges' });
+  }
+  next();
+};
 
 // function to check if a user is a super admin
 export const isSuperAdmin = (req: any, res: any, next: any) => {
   const role = req.user.role;
   console.log('role', role);
-  if (role !== 'super_admin' ) {
+  if (role !== 'super_admin') {
     return res.status(403).json({ message: 'Requires super admin privilege' });
   }
   next();

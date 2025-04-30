@@ -19,36 +19,39 @@ async function addNutritionField() {
     const recipesCollection = db.collection('recipes');
 
     // Count recipes that don't have nutrition field
-    const recipesWithoutNutrition = await recipesCollection.countDocuments({ 
-      nutrition: { $exists: false } 
+    const recipesWithoutNutrition = await recipesCollection.countDocuments({
+      nutrition: { $exists: false },
     });
-    console.log(`Found ${recipesWithoutNutrition} recipes without nutrition field`);
+    console.log(
+      `Found ${recipesWithoutNutrition} recipes without nutrition field`
+    );
 
     // Update all recipes without nutrition field
     const result = await recipesCollection.updateMany(
       { nutrition: { $exists: false } },
-      { 
-        $set: { 
+      {
+        $set: {
           nutrition: {
             calories: 0,
             protein: 0,
             carbs: 0,
             fat: 0,
             fiber: 0,
-            sugar: 0
-          }
-        } 
+            sugar: 0,
+          },
+        },
       }
     );
 
-    console.log(`Updated ${result.modifiedCount} recipes with default nutrition data`);
+    console.log(
+      `Updated ${result.modifiedCount} recipes with default nutrition data`
+    );
 
     // Verify update
-    const verifyCount = await recipesCollection.countDocuments({ 
-      nutrition: { $exists: true } 
+    const verifyCount = await recipesCollection.countDocuments({
+      nutrition: { $exists: true },
     });
     console.log(`Now ${verifyCount} recipes have nutrition field`);
-
   } catch (error) {
     console.error('Error in migration:', error);
   } finally {

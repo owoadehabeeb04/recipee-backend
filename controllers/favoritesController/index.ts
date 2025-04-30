@@ -98,24 +98,19 @@ export const getAllFavorites = async (req: any, res: any) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Get search and category from query string
     const search = req.query.search as string;
     const category = req.query.category as string;
     const sort = (req.query.sort as string) || 'newest';
 
-    // IMPORTANT: First build the base query to only get current user's favorites
     const query: any = { user: userId };
-    
-    // Step 1: If we have search or category filters, we need to find matching recipe IDs first
+
     if (search || category) {
-      // Build a recipe query to find matching recipes
       const recipeQuery: any = {};
-      
-      // Add category filter to recipe query if provided
+
       if (category) {
         recipeQuery.category = category;
       }
-      
+
       // Add search filter to recipe query if provided
       if (search) {
         recipeQuery.$or = [
@@ -123,13 +118,13 @@ export const getAllFavorites = async (req: any, res: any) => {
           { description: { $regex: search, $options: 'i' } },
         ];
       }
-      
+
       // Find all recipe IDs that match our criteria
       const matchingRecipes = await RecipeModel.find(recipeQuery).select('_id');
-      
+
       // Extract just the IDs
-      const recipeIds = matchingRecipes.map(recipe => recipe._id);
-      
+      const recipeIds = matchingRecipes.map((recipe) => recipe._id);
+
       // If we have matching recipes, add them to our favorites query
       if (recipeIds.length > 0) {
         // Only include favorites with these recipe IDs
@@ -138,6 +133,7 @@ export const getAllFavorites = async (req: any, res: any) => {
         // No recipes match our criteria, so return empty result
         return res.status(200).json({
           success: true,
+          status: 200,
           message: 'No favorites match the search criteria',
           data: [],
           pagination: {
@@ -149,10 +145,10 @@ export const getAllFavorites = async (req: any, res: any) => {
         });
       }
     }
-    
+
     // Count the total number of matching favorites with our updated query
     const total = await FavoriteModel.countDocuments(query);
-    
+
     // Set up sorting options
     let sortOptions: any = {};
     switch (sort) {
@@ -163,7 +159,7 @@ export const getAllFavorites = async (req: any, res: any) => {
       default:
         sortOptions = { createdAt: -1 }; // newest by default
     }
-    
+
     // Get favorites with populated recipe and user data
     const favoriteRecipes = await FavoriteModel.find(query)
       .sort(sortOptions)
@@ -172,12 +168,12 @@ export const getAllFavorites = async (req: any, res: any) => {
       .populate('recipe') // Get all recipe data
       .populate({
         path: 'user',
-        select: 'username email' // Only select necessary user fields
+        select: 'username email', 
       });
-    
+
     // Handle sorting that requires populated data
     let sortedFavorites = [...favoriteRecipes];
-    
+
     if (sort === 'title' && sortedFavorites.length > 0) {
       sortedFavorites.sort((a, b) => {
         return a.recipe?.title.localeCompare(b.recipe?.title) || 0;
@@ -189,7 +185,7 @@ export const getAllFavorites = async (req: any, res: any) => {
       //   return ratingB - ratingA; // Higher ratings first
       // });
     }
-    
+
     return res.status(200).json({
       success: true,
       message: 'Favorite recipes retrieved successfully',

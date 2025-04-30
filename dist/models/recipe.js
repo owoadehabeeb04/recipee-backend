@@ -8,14 +8,33 @@ const recipeSchema = new mongoose_1.default.Schema({
     admin: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'User',
-        required: true,
+        required: function () {
+            return this.roleCreated === 'admin';
+        },
     },
     adminDetails: {
         name: { type: String },
         email: { type: String },
         role: { type: String },
     },
-    adminId: { type: String, required: true },
+    adminId: {
+        type: String,
+        required: function () {
+            return this.roleCreated === 'admin';
+        },
+    },
+    user: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'User',
+        required: function () {
+            return this.roleCreated === 'user';
+        },
+    },
+    userDetails: {
+        name: { type: String },
+        email: { type: String },
+        role: { type: String },
+    },
     title: { type: String, required: true },
     category: {
         type: String,
@@ -52,7 +71,16 @@ const recipeSchema = new mongoose_1.default.Schema({
         carbs: { type: Number, default: 0 },
         fat: { type: Number, default: 0 },
         fiber: { type: Number, default: 0 },
-        sugar: { type: Number, default: 0 }
+        sugar: { type: Number, default: 0 },
+    },
+    isPrivate: {
+        type: Boolean,
+        default: false,
+    },
+    roleCreated: {
+        type: String,
+        enum: ['admin', 'user'],
+        required: true,
     },
     ratings: [
         {

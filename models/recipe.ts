@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 interface recipe {
   adminName: string;
   adminId: string;
+  user: string;
   adminDetails: string[];
   title: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'dessert' | 'snack' | 'beverage';
@@ -21,7 +22,9 @@ interface recipe {
     fiber: number;
     sugar: number;
     protein: number;
-  }
+  };
+  roleCreated: string;
+  isPrivate: boolean;
 }
 
 const recipeSchema = new mongoose.Schema(
@@ -29,14 +32,33 @@ const recipeSchema = new mongoose.Schema(
     admin: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      required: function (this: any) {
+        return this.roleCreated === 'admin';
+      },
     },
     adminDetails: {
       name: { type: String },
       email: { type: String },
       role: { type: String },
     },
-    adminId: { type: String, required: true },
+    adminId: {
+      type: String,
+      required: function (this: any) {
+        return this.roleCreated === 'admin';
+      },
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: function (this: any) {
+        return this.roleCreated === 'user';
+      },
+    },
+    userDetails: {
+      name: { type: String },
+      email: { type: String },
+      role: { type: String },
+    },
     title: { type: String, required: true },
     category: {
       type: String,
@@ -73,8 +95,18 @@ const recipeSchema = new mongoose.Schema(
       carbs: { type: Number, default: 0 },
       fat: { type: Number, default: 0 },
       fiber: { type: Number, default: 0 },
-      sugar: { type: Number, default: 0 }
+      sugar: { type: Number, default: 0 },
     },
+    isPrivate: {
+      type: Boolean,
+      default: false,
+    },
+    roleCreated: {
+      type: String,
+      enum: ['admin', 'user'],
+      required: true,
+    },
+
     ratings: [
       {
         userId: { type: String },

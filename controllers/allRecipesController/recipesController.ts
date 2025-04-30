@@ -3,79 +3,113 @@ import { Express } from 'express';
 import mongoose from 'mongoose';
 import RecipeModel from '../../models/recipe';
 import UserModel from '../../models/user';
+import FavoriteModel from '../../models/favoriteRecipe';
 
 // GET ALL RECIPES
-console.log('ADMIN IOS HEREEEE!! ')
+console.log('ADMIN IOS HEREEEE!! ');
 export const getAllRecipes = async (req: any, res: any) => {
-  console.log('GOTTEN ALL RECIPES DONT PLAY MAN!')
+  console.log('GETTING ALL RECIPES');
   try {
+    const userId = req.user?._id;
+    
     // pagination to prevent bulky recipes
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Get search and category from query string
     const search = req.query.search as string;
     const category = req.query.category as string;
     const sort = (req.query.sort as string) || 'newest';
 
-    // Improve role detection
-    const hasValidAuth = !!req.user;
-    const userRole = req.user?.role || 'user';
-
-    // Build query object
+    const userRole = req.user?.role || 'public';
+    
+    // Simplify query structure
     let query: any = {};
-
-    // Only filter by isPublished if the user isn't an admin
-    if (!hasValidAuth || userRole === 'user') {
-      query.isPublished = true;
-      console.log('Filtering for published recipes only');
-    } else {
-      console.log('Admin access - showing all recipes');
-    }
-
-    // Add other filters
-    if (category) {
-      query.category = category;
-    }
-
-    if (search) {
+    
+    // Handle role-based visibility
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      // Simpler query for admins - they can see all admin recipes and public user recipes
       query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
+        { roleCreated: 'admin' },
+        { roleCreated: 'user', isPrivate: false },
       ];
+      
+      // Only add user-specific condition if userId exists
+      if (userId) {
+        query.$or.push({ user: userId });
+      }
+    } else if (userRole === 'user' && userId) {
+      // For logged in users
+      query.$or = [
+        { isPublished: true, isPrivate: false },
+        { user: userId }
+      ];
+    } else {
+      // For public access
+      query.isPublished = true;
+      query.isPrivate = false;
     }
 
-    // Count the total number of matching recipes
-    const total = await RecipeModel.countDocuments(query);
-
-    let sortOptions: any = {};
-    switch (sort) {
-      case 'oldest':
-        sortOptions = { createdAt: 1 };
-        break;
-      case 'title':
-        sortOptions = { title: 1 };
-        break;
-      case 'rating':
-        sortOptions = { averageRating: -1 };
-        break;
-      default:
-        sortOptions = { createdAt: -1 }; // newest by default
+    // Add category filter if provided
+    if (category) {
+      if (query.$or) {
+        query = {
+          $and: [
+            { $or: query.$or },
+            { category }
+          ]
+        };
+      } else {
+        query.category = category;
+      }
     }
-    console.log('Sorting by:', sort);
 
-    const recipes = await RecipeModel.find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
+    // Add search filter if provided
+    if (search) {
+      const searchQuery = { 
+        $or: [
+          { title: { $regex: search, $options: 'i' } },
+          { description: { $regex: search, $options: 'i' } }
+        ]
+      };
+      
+      if (query.$and) {
+        query.$and.push(searchQuery);
+      } else if (query.$or) {
+        query = {
+          $and: [
+            { $or: query.$or },
+            searchQuery
+          ]
+        };
+      } else {
+        query = searchQuery;
+      }
+    }
 
-    console.log('Recipes found:', recipes.length);
+    console.log('Query:', JSON.stringify(query, null, 2));
+
+    // Set timeout option for queries
+    const options = { maxTimeMS: 20000 }; // 20 seconds timeout
+    
+    // Use Promise.all to run both queries in parallel
+    const [recipes, total] = await Promise.all([
+      RecipeModel.find(query, null, options)
+        .sort(getSortOptions(sort))
+        .skip(skip)
+        .limit(limit)
+        .lean(), // Use lean() for better performance
+      
+      RecipeModel.countDocuments(query, options)
+    ]);
+
+    console.log(`Found ${recipes.length} recipes out of ${total} total`);
 
     return res.status(200).json({
-      message: 'Gotten recipes successfully',
-      data: recipes,
+      success: true,
       status: 200,
+      message: 'Recipes retrieved successfully',
+      data: recipes,
       pagination: {
         limit,
         page,
@@ -86,16 +120,26 @@ export const getAllRecipes = async (req: any, res: any) => {
   } catch (error) {
     console.error('Error in getAllRecipes:', error);
     return res.status(500).json({
-      message: 'server error',
+      success: false,
+      message: 'Server error',
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
+
+// Helper function to get sort options
+function getSortOptions(sort: string): { [key: string]: 1 | -1 } {
+  switch (sort) {
+    case 'oldest': return { createdAt: 1 };
+    case 'title': return { title: 1 };
+    case 'rating': return { averageRating: -1 };
+    default: return { createdAt: -1 }; // newest by default
+  }
+}
 // CREATE A RECIPE
 export const createRecipe = async (req: any, res: any) => {
-  console.log('GOTTEN THE CREATE RECIPE MAN !!!! ALHAMDULILLAH')
+  console.log('CREATE RECIPE FUNCTION CALLED');
   try {
-    console.log('REQUEST BODY:', JSON.stringify(req.body, null, 2));
-
     const {
       title,
       servings,
@@ -108,43 +152,16 @@ export const createRecipe = async (req: any, res: any) => {
       featuredImage,
       tips,
       nutrition,
+      isPrivate = false,
     } = req.body;
-    console.log('request body', req.body)
+    
+    const userId = req.user._id;
+    const userRole = req.user.role;
+    
+    console.log('User role:', userRole);
+    console.log('User ID:', userId);
 
-    const adminId = req.user?._id;
-
-    let formattedAdminId;
-    try {
-      // If adminId is a string, convert it to ObjectId
-      formattedAdminId =
-        typeof adminId === 'string'
-          ? new mongoose.Types.ObjectId(adminId)
-          : adminId;
-    } catch (err) {
-      console.error('Error converting admin ID:', err);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid admin ID format',
-      });
-    }
-
-    // Get complete admin details from database with proper error handling
-    const adminDetail = await UserModel.findById(formattedAdminId);
-
-    // Debug the admin details result
-    if (adminDetail) {
-      console.log('Admin name:', adminDetail.username);
-    }
-
-    if (!adminDetail) {
-      return res.status(404).json({
-        success: false,
-        message: 'Admin user not found',
-      });
-    }
-
-
-    console.log(nutrition, 'nutrtion')
+    // Handle nutrition data
     const nutritionData = {
       calories: Number(nutrition?.calories || 0),
       protein: Number(nutrition?.protein || 0),
@@ -154,14 +171,55 @@ export const createRecipe = async (req: any, res: any) => {
       sugar: Number(nutrition?.sugar || 0)
     };
 
-    const newRecipe = new RecipeModel({
-      admin: adminDetail._id,
+    // Create the base recipe data 
+    // Use proper typing to match your schema
+    interface BaseRecipeData {
+      title: string;
+      description: string;
+      category: string;
+      cookingTime: number;
+      difficulty: string;
+      servings: number;
+      ingredients: any[];
+      steps: string[];
+      featuredImage: string;
+      tips: string[];
+      nutrition: {
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        fiber: number;
+        sugar: number;
+      };
+      isPrivate: boolean;
+      isPublished: boolean;
+      roleCreated: string;
+    }
+
+    // Admin recipe includes these additional fields
+    interface AdminRecipeData extends BaseRecipeData {
+      admin: any;
+      adminId: any;
       adminDetails: {
-        name: adminDetail.username,
-        email: adminDetail.email,
-        role: adminDetail.role,
-      },
-      adminId,
+        name: string;
+        email: string;
+        role: string;
+      };
+    }
+
+    // User recipe includes this additional field
+    interface UserRecipeData extends BaseRecipeData {
+      user: any;
+      userDetails: {
+        name: string;
+        email: string;
+        role: string | 'user';
+      }
+    }
+
+    // Start with base recipe data
+    const baseRecipeData: BaseRecipeData = {
       title,
       description,
       category,
@@ -171,17 +229,77 @@ export const createRecipe = async (req: any, res: any) => {
       ingredients,
       steps,
       featuredImage: featuredImage || '',
-      isPublished: false,
       tips,
       nutrition: nutritionData,
-    });
-
+      isPrivate: userRole === 'admin' ? false : (isPrivate || false),
+      isPublished: false,
+      roleCreated: userRole
+    };
+    
+    // Create the final recipe data with proper type
+    let recipeData: AdminRecipeData | UserRecipeData;
+    
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      recipeData = {
+        ...baseRecipeData,
+        admin: userId,
+        adminId: userId,
+        adminDetails: {
+          name: req.user.username || req.user.name,
+          email: req.user.email,
+          role: req.user.role
+        }
+      };
+      console.log('Added admin fields');
+    } else {
+      recipeData = {
+        ...baseRecipeData,
+        user: userId,
+        userDetails: {
+          name: req.user.username || req.user.name,
+          email: req.user.email,
+          role: req.user.role
+        }
+      };
+      console.log('Added user field');
+    }
+    
+    console.log('Recipe data prepared:', JSON.stringify(recipeData, null, 2));
+    
+    // Create and save the recipe
+    const newRecipe = new RecipeModel(recipeData);
     const savedRecipe = await newRecipe.save();
-    console.log('saved recipe', savedRecipe)
+    
+    console.log('Recipe saved successfully with ID:', savedRecipe._id);
 
-    // Debug the saved recipe
-    // console.log("Saved recipe admin field:", savedRecipe.admin);
-    // console.log("Saved recipe adminDetails:", savedRecipe.adminDetails);
+    // If the recipe creator is a regular user (not an admin), add to favorites
+    if (userRole === 'user') {
+      try {
+        // Check if the user already has a favorites document
+        let userFavorites = await FavoriteModel.findOne({ user: userId });
+        
+        if (!userFavorites) {
+          // If user doesn't have favorites document yet, create one
+          userFavorites = new FavoriteModel({
+            user: userId,
+            recipes: [savedRecipe._id]
+          });
+          await userFavorites.save();
+          console.log(`Created new favorites document for user ${userId} and added recipe ${savedRecipe._id}`);
+        } else {
+          // If favorites document exists, add the recipe to it
+          if (!userFavorites.recipe.includes(savedRecipe._id)) {
+            userFavorites.recipe.push(savedRecipe._id);
+            await userFavorites.save();
+            console.log(`Added recipe ${savedRecipe._id} to user ${userId}'s favorites`);
+          }
+        }
+      } catch (favError) {
+        // Don't fail the whole request if adding to favorites fails
+        console.error('Error adding recipe to favorites:', favError);
+        // We'll still return success since the recipe was created
+      }
+    }
 
     return res.status(201).json({
       success: true,
@@ -189,16 +307,17 @@ export const createRecipe = async (req: any, res: any) => {
       data: savedRecipe,
     });
   } catch (error) {
-    console.log(error);
-    return res
-      .status(500)
-      .json({ message: 'Failed to create recipe, An unknown error occured ' });
+    console.error('Error creating recipe:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Failed to create recipe', 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };
-
 // GET RECIPE STATISTICS
 export const getStatistics = async (req: any, res: any) => {
-  console.log('get statistics i pray it gets here ')
+  console.log('get statistics i pray it gets here ');
   try {
     const adminId = req.user?._id;
 
@@ -251,11 +370,20 @@ export const getYourRecentRecipes = async (req: any, res: any) => {
 export const getSingleRecipe = async (req: any, res: any) => {
   try {
     const { id } = req.params;
+    const userId = req.user?._id;
+    const userRole = req.user?.role || 'public'; // Default to 'public' if not logged in
+    
+    console.log(`Getting recipe ${id} for user ${userId} with role ${userRole}`);
 
-    const userRole = req.user?.role || 'user';
+    // Validate ObjectId format
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid recipe ID format'
+      });
+    }
 
     const recipe = await RecipeModel.findById(id);
-    console.log({recipe})
 
     if (!recipe) {
       return res.status(404).json({
@@ -264,17 +392,47 @@ export const getSingleRecipe = async (req: any, res: any) => {
       });
     }
 
-    if (userRole === 'user' && recipe.isPublished === false) {
-      return res.status(403).json({
-        success: false,
-        message: 'This recipe is not yet published',
-      });
+    // Check access permissions:
+    // 1. Admins can see any recipe
+    // 2. Users can see:
+    //    - Any published recipe 
+    //    - Their own recipes (published or not)
+    // 3. Public users can only see published recipes
+    
+    if (userRole === 'admin' || userRole === 'super_admin') {
+      // Admins can see everything
+      console.log('Admin access - showing recipe');
+    } else if (userRole === 'user') {
+      // For regular users:
+      const isOwnRecipe = recipe.user && recipe.user.toString() === userId?.toString();
+      
+      if (!recipe.isPublished && !isOwnRecipe) {
+        console.log('Access denied - recipe not published and not owned by this user');
+        return res.status(403).json({
+          success: false,
+          message: 'This recipe is not yet published',
+        });
+      }
+      
+      console.log(`User access - ${isOwnRecipe ? 'showing own recipe' : 'showing published recipe'}`);
+    } else {
+      // Public access
+      if (!recipe.isPublished || recipe.isPrivate) {
+        console.log('Public access denied - recipe not published or is private');
+        return res.status(403).json({
+          success: false,
+          message: 'This recipe is not available',
+        });
+      }
+      console.log('Public access - showing published recipe');
     }
 
     return res.status(200).json({
       success: true,
       message: 'Recipe retrieved successfully',
       data: recipe,
+      // Include an indicator if this is the user's own recipe
+      isOwnRecipe: userRole === 'user' && recipe.user && recipe.user.toString() === userId?.toString()
     });
   } catch (error) {
     console.error('Error fetching recipe:', error);
@@ -282,6 +440,49 @@ export const getSingleRecipe = async (req: any, res: any) => {
       success: false,
       message: 'Server error',
       error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+// GET ALL USER RECIPES
+export const getUserRecipes = async (req: any, res: any) => {
+  try {
+    const userId = req.user._id;
+    // pagination
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
+    // Find recipes where the user is the creator
+    const query = { user: userId };
+
+    // Count total
+    const total = await RecipeModel.countDocuments(query);
+
+    // Get recipes
+    const recipes = await RecipeModel.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your recipes retrieved successfully',
+      data: recipes,
+      pagination: {
+        limit,
+        page,
+        total,
+        pages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error('Error getting user recipes:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error:
+        error instanceof Error ? error.message : 'An unknown error occurred',
     });
   }
 };

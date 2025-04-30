@@ -14,7 +14,7 @@ export const deleteRecipe = async (req: any, res: any) => {
     const adminRole = req.user?.role;
     const adminId = req.user?._id;
 
-    if (recipe.adminId.toString() !== adminId && adminRole !== 'admin') {
+    if (recipe.adminId.toString() !== adminId  ) {
       return res
         .status(401)
         .json({ message: 'You are not authorized to delete this recipe' });
@@ -38,8 +38,17 @@ export const editRecipe = async (req: any, res: any) => {
   try {
     const { id } = req.params;
 
+    // Check if ID is valid MongoDB ObjectId
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid recipe ID format',
+      });
+    }
+
     // Check if recipe exists
     const recipe = await RecipeModel.findById(id);
+    console.log('RECIPE', recipe);
     if (!recipe) {
       return res.status(404).json({
         success: false,
@@ -48,8 +57,7 @@ export const editRecipe = async (req: any, res: any) => {
     }
 
     if (
-      recipe.adminId.toString() !== req.user?._id.toString() &&
-      req.user?.role !== 'admin'
+      recipe.adminId.toString() !== req.user?._id.toString() 
     ) {
       return res.status(401).json({
         success: false,
@@ -71,18 +79,41 @@ export const editRecipe = async (req: any, res: any) => {
       'tips',
       'featuredImage',
       'isPublished',
+      'nutrition',
+      'isPrivate',
     ];
 
+    // Handle regular fields
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) {
         updateData[field] = req.body[field];
       }
     });
 
+    // Special handling for nutrition field
+    if (req.body.nutrition) {
+      console.log('Updating nutrition field:', req.body.nutrition);
+      console.log(updateData);
+      // Process nutrition data with proper type conversion
+      updateData.nutrition = {
+        calories: Number(req.body.nutrition?.calories || 0),
+        protein: Number(req.body.nutrition?.protein || 0),
+        carbs: Number(req.body.nutrition?.carbs || 0),
+        fat: Number(req.body.nutrition?.fat || 0),
+        fiber: Number(req.body.nutrition?.fiber || 0),
+        sugar: Number(req.body.nutrition?.sugar || 0),
+      };
+    }
+
+    console.log('Update data:', updateData);
+
     const updatedRecipe = await RecipeModel.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
+      new: true, // Return updated document
+      runValidators: true, // Run schema validation
+      lean: true, // Return plain JS object instead of Mongoose document
     });
+
+    console.log('Updated recipe nutrition:', updatedRecipe?.nutrition);
 
     return res.status(200).json({
       success: true,
@@ -90,7 +121,7 @@ export const editRecipe = async (req: any, res: any) => {
       data: updatedRecipe,
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error updating recipe:', error);
     return res.status(500).json({
       success: false,
       message: 'Failed to update recipe',
@@ -98,7 +129,6 @@ export const editRecipe = async (req: any, res: any) => {
     });
   }
 };
-
 // GET ADMIN RECIPES
 
 export const getAdminRecipes = async (req: any, res: any) => {
@@ -197,7 +227,15 @@ export const togglePublishStatus = async (req: any, res: any) => {
         message: 'Recipe not found',
       });
     }
-
+    if (
+      recipeToToggle.roleCreated === 'user' &&
+      recipeToToggle.isPrivate === true
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot publish private user recipes',
+      });
+    }
     const newPublishStatus = !recipeToToggle.isPublished;
 
     const updatedRecipe = await RecipeModel.findByIdAndUpdate(

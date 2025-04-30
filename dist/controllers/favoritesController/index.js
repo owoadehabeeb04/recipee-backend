@@ -95,17 +95,12 @@ const getAllFavorites = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
-        // Get search and category from query string
         const search = req.query.search;
         const category = req.query.category;
         const sort = req.query.sort || 'newest';
-        // IMPORTANT: First build the base query to only get current user's favorites
         const query = { user: userId };
-        // Step 1: If we have search or category filters, we need to find matching recipe IDs first
         if (search || category) {
-            // Build a recipe query to find matching recipes
             const recipeQuery = {};
-            // Add category filter to recipe query if provided
             if (category) {
                 recipeQuery.category = category;
             }
@@ -119,7 +114,7 @@ const getAllFavorites = async (req, res) => {
             // Find all recipe IDs that match our criteria
             const matchingRecipes = await recipe_1.default.find(recipeQuery).select('_id');
             // Extract just the IDs
-            const recipeIds = matchingRecipes.map(recipe => recipe._id);
+            const recipeIds = matchingRecipes.map((recipe) => recipe._id);
             // If we have matching recipes, add them to our favorites query
             if (recipeIds.length > 0) {
                 // Only include favorites with these recipe IDs
@@ -129,6 +124,7 @@ const getAllFavorites = async (req, res) => {
                 // No recipes match our criteria, so return empty result
                 return res.status(200).json({
                     success: true,
+                    status: 200,
                     message: 'No favorites match the search criteria',
                     data: [],
                     pagination: {
@@ -160,7 +156,7 @@ const getAllFavorites = async (req, res) => {
             .populate('recipe') // Get all recipe data
             .populate({
             path: 'user',
-            select: 'username email' // Only select necessary user fields
+            select: 'username email',
         });
         // Handle sorting that requires populated data
         let sortedFavorites = [...favoriteRecipes];

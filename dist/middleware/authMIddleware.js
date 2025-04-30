@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isUser = exports.isSuperAdmin = exports.isAdmin = exports.optionalAuth = exports.verifyToken = void 0;
+exports.isUser = exports.isSuperAdmin = exports.isAdminOrUser = exports.isAdmin = exports.optionalAuth = exports.verifyToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 //function  to  verify token
 const verifyToken = (req, res, next) => {
@@ -83,6 +83,17 @@ const isAdmin = (req, res, next) => {
     next();
 };
 exports.isAdmin = isAdmin;
+// function to check if a user is an admin or user
+const isAdminOrUser = (req, res, next) => {
+    const role = req.user.role;
+    if (role !== 'admin' && role !== 'user') {
+        return res
+            .status(403)
+            .json({ message: 'Requires admin or user privileges' });
+    }
+    next();
+};
+exports.isAdminOrUser = isAdminOrUser;
 // function to check if a user is a super admin
 const isSuperAdmin = (req, res, next) => {
     const role = req.user.role;
