@@ -29,6 +29,15 @@ interface RecipeDetails {
     fat: number;
   };
 }
+const CalendarEventSchema = new mongoose.Schema({
+  eventId: String,
+  day: String,
+  mealType: String,
+  recipeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Recipe'
+  }
+}, { _id: false });
 
 // Create the schema with a well-defined structure
 const MealPlanSchema = new Schema({
@@ -492,7 +501,24 @@ const MealPlanSchema = new Schema({
   isActive: {
     type: Boolean,
     default: true
-  }
+  },
+  isDuplicate: {
+    type: Boolean,
+    default: false
+  },
+  checkedItems: {
+    type: [String],
+    default: []
+  },
+  lastShoppingListUpdate: {
+    type: Date
+  },
+  connectedToCalendar: {
+    type: Boolean,
+    default: false
+  },
+  calendarConnectionDate: Date,
+  calendarEvents: [CalendarEventSchema]
 }, { timestamps: true });
 
 // Add helpful indexes

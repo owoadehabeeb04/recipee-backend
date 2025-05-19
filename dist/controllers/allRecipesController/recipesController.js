@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserRecipes = exports.getSingleRecipe = exports.getYourRecentRecipes = exports.getStatistics = exports.createRecipe = exports.getAllRecipes = void 0;
 const mongoose_1 = __importDefault(require("mongoose"));
 const recipe_1 = __importDefault(require("../../models/recipe"));
-const favoriteRecipe_1 = __importDefault(require("../../models/favoriteRecipe"));
+const favoritesController_1 = require("../favoritesController");
 // GET ALL RECIPES
 console.log('ADMIN IOS HEREEEE!! ');
 const getAllRecipes = async (req, res) => {
@@ -197,33 +197,34 @@ const createRecipe = async (req, res) => {
         const newRecipe = new recipe_1.default(recipeData);
         const savedRecipe = await newRecipe.save();
         console.log('Recipe saved successfully with ID:', savedRecipe._id);
-        // If the recipe creator is a regular user (not an admin), add to favorites
         if (userRole === 'user') {
             try {
-                // Check if the user already has a favorites document
-                let userFavorites = await favoriteRecipe_1.default.findOne({ user: userId });
-                if (!userFavorites) {
-                    // If user doesn't have favorites document yet, create one
-                    userFavorites = new favoriteRecipe_1.default({
-                        user: userId,
-                        recipes: [savedRecipe._id]
-                    });
-                    await userFavorites.save();
-                    console.log(`Created new favorites document for user ${userId} and added recipe ${savedRecipe._id}`);
-                }
-                else {
-                    // If favorites document exists, add the recipe to it
-                    if (!userFavorites.recipe.includes(savedRecipe._id)) {
-                        userFavorites.recipe.push(savedRecipe._id);
-                        await userFavorites.save();
-                        console.log(`Added recipe ${savedRecipe._id} to user ${userId}'s favorites`);
+                const mockReq = {
+                    body: { recipeId: savedRecipe._id },
+                    user: { _id: userId }
+                };
+                // Create a response object that won't actually send anything to the client
+                const mockRes = {
+                    status: function (statusCode) {
+                        console.log(`Favorite add status: ${statusCode}`);
+                        return this;
+                    },
+                    json: function (data) {
+                        if (data.success) {
+                            console.log(`Added recipe ${savedRecipe._id} to user ${userId}'s favorites`);
+                        }
+                        else {
+                            console.log(`Note: ${data.message}`);
+                        }
+                        return data;
                     }
-                }
+                };
+                // Call the existing controller function
+                await (0, favoritesController_1.addToFavorites)(mockReq, mockRes);
             }
             catch (favError) {
                 // Don't fail the whole request if adding to favorites fails
                 console.error('Error adding recipe to favorites:', favError);
-                // We'll still return success since the recipe was created
             }
         }
         return res.status(201).json({

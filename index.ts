@@ -52,6 +52,7 @@ mongoose
     socketTimeoutMS: 45000,
     family: 4, // Force IPv4
     retryWrites: true,
+    maxPoolSize: 10,
     w: 'majority',
     tlsInsecure: true, // Only for development
   })

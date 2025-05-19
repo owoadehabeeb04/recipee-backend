@@ -34,6 +34,15 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
+const CalendarEventSchema = new mongoose_1.default.Schema({
+    eventId: String,
+    day: String,
+    mealType: String,
+    recipeId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Recipe'
+    }
+}, { _id: false });
 // Create the schema with a well-defined structure
 const MealPlanSchema = new mongoose_1.Schema({
     name: {
@@ -494,7 +503,24 @@ const MealPlanSchema = new mongoose_1.Schema({
     isActive: {
         type: Boolean,
         default: true
-    }
+    },
+    isDuplicate: {
+        type: Boolean,
+        default: false
+    },
+    checkedItems: {
+        type: [String],
+        default: []
+    },
+    lastShoppingListUpdate: {
+        type: Date
+    },
+    connectedToCalendar: {
+        type: Boolean,
+        default: false
+    },
+    calendarConnectionDate: Date,
+    calendarEvents: [CalendarEventSchema]
 }, { timestamps: true });
 // Add helpful indexes
 MealPlanSchema.index({ user: 1, week: 1 }, { unique: true });

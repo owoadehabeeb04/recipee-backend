@@ -4,462 +4,6 @@ import RecipeModel from '../../models/recipe';
 import MealPlan from '../../models/meal-planner';
 
 
-/**
- * Create a new meal plan
- */
-export const createMealPlan = async (req: any, res: any) => {
-  try {
-    const { name, week, plan, notes } = req.body;
-    const userId = req.user._id;
-
-    // Validate week format
-    if (!Date.parse(week)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid week format, please provide a valid date'
-      });
-    }
-
-    const weekDate = new Date(week);
-    const dayOfWeek = weekDate.getDay(); 
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    // Set to the beginning of the week (Monday)
-    weekDate.setDate(weekDate.getDate() - diff);
-    weekDate.setHours(0, 0, 0, 0);
-    
-    // Set to the end of the week (Sunday)
-    const endOfWeek = new Date(weekDate);
-    endOfWeek.setDate(endOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-
-    // Check if user already has a meal plan for this week
-    const existingPlan = await MealPlan.findOne({
-      user: userId,
-      week: {
-        $gte: weekDate,
-        $lte: endOfWeek
-      }
-    });
-
-    if (existingPlan) {
-      return res.status(409).json({
-        success: false,
-        message: 'You already have a meal plan for this week',
-        existingPlan: {
-          id: existingPlan._id,
-          name: existingPlan.name,
-          week: existingPlan.week
-        }
-      });
-    }
-
-    // Check if all recipe IDs exist and are accessible to the user
-    const recipeIds = extractRecipeIds(plan);
-    
-    if (recipeIds.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No recipe IDs provided in the meal plan'
-      });
-    }
-
-    // Fetch detailed recipe information to embed in the meal plan
-    const recipes = await RecipeModel.find({ 
-      _id: { $in: recipeIds },
-      $or: [
-        { isPublished: true, isPrivate: false },
-        { user: userId }
-      ]
-    });
-    
-    // Create a map for quick recipe lookup
-    const recipeMap = recipes.reduce((acc: any, recipe) => {
-      acc[recipe._id.toString()] = recipe;
-      return acc;
-    }, {});
-
-    // Verify all recipes exist and are accessible
-    if (recipes.length !== recipeIds.length) {
-      return res.status(400).json({
-        success: false,
-        message: 'One or more recipes do not exist or are not accessible'
-      });
-    }
-
-    // Embed recipe details in the plan
-    const enrichedPlan = embedRecipeDetails(plan, recipeMap);
-
-    // Create the meal plan with the enriched plan containing recipe details
-    const mealPlan = new MealPlan({
-      name,
-      week: weekDate, // Use the standardized Monday date
-      plan: enrichedPlan, // Use the enriched plan with recipe details
-      notes,
-      user: userId,
-    });
-
-    await mealPlan.save();
-
-    return res.status(201).json({
-      success: true,
-      message: 'Meal plan created successfully',
-      data: mealPlan
-    });
-  } catch (error) {
-    console.error('Error creating meal plan:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to create meal plan',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
-
-/**
- * Get all meal plans for the authenticated user
- */
-export const getUserMealPlans = async (req: any, res: any) => {
-  try {
-    const userId = req.user._id;
-    const { limit = 10, page = 1, active } = req.query;
-    
-    const skip = (Number(page) - 1) * Number(limit);
-    
-    // Build query
-    const query: any = { user: userId };
-    
-    // Filter by active status if specified
-    if (active !== undefined) {
-      query.isActive = active === 'true';
-    }
-    
-    // Get meal plans with pagination
-    const mealPlans = await MealPlan.find(query)
-      .sort({ week: -1 }) // Latest week first
-      .skip(skip)
-      .limit(Number(limit));
-      
-    // Get total count for pagination
-    const total = await MealPlan.countDocuments(query);
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Meal plans retrieved successfully',
-      data: mealPlans,
-      pagination: {
-        total,
-        page: Number(page),
-        limit: Number(limit),
-        pages: Math.ceil(total / Number(limit))
-      }
-    });
-  } catch (error) {
-    console.error('Error getting meal plans:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve meal plans',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
-
-/**
- * Get a single meal plan with recipe details
- */
-export const getMealPlan = async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user._id;
-    
-    // Validate ObjectId
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid meal plan ID'
-      });
-    }
-    
-    // Get the meal plan
-    const mealPlan = await MealPlan.findOne({ _id: id, user: userId });
-    
-    if (!mealPlan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Meal plan not found'
-      });
-    }
-    
-    // Get all recipe IDs from the plan
-    const recipeIds = extractRecipeIds(mealPlan.plan);
-    
-    // Get detailed recipe information
-    const recipes = await RecipeModel.find({ 
-      _id: { $in: recipeIds } 
-    })
-    // Create a map for quick recipe lookup
-    const recipeMap = recipes.reduce((acc: any, recipe: { _id: { toString: () => string | number; }; }) => {
-      acc[recipe._id.toString()] = recipe;
-      return acc;
-    }, {});
-    
-    // Enrich the plan with recipe details
-    const enrichedPlan = enrichPlanWithRecipes(mealPlan.plan, recipeMap);
-    console.log({enrichedPlan})
-    // Create response object
-    const response = {
-      ...mealPlan.toObject(),
-      plan: enrichedPlan
-    };
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Meal plan retrieved successfully',
-      data: response
-    });
-  } catch (error) {
-    console.error('Error getting meal plan:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve meal plan',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
-
-
-export const getMealPlanByWeek = async (req: any, res: any) => {
-  try {
-    const { date } = req.params;
-    const userId = req.user._id;
-    
-    if (!date || !Date.parse(date)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid date format, please provide a valid date (YYYY-MM-DD)'
-      });
-    }
-
-    const targetDate = new Date(date);
-    const dayOfWeek = targetDate.getDay(); 
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    const weekStart = new Date(targetDate);
-    weekStart.setDate(targetDate.getDate() - diff);
-    weekStart.setHours(0, 0, 0, 0);
-    
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    weekEnd.setHours(23, 59, 59, 999);
-    
-    // Find the meal plan for this week
-    const mealPlan = await MealPlan.findOne({ 
-      user: userId,
-      week: {
-        $gte: weekStart,
-        $lte: weekEnd
-      }
-    });
-    
-    if (!mealPlan) {
-      return res.status(404).json({
-        success: false,
-        message: 'No meal plan found for the specified week',
-        weekRange: {
-          start: weekStart,
-          end: weekEnd
-        }
-      });
-    }
-    
-    // Get all recipe IDs from the plan
-    const recipeIds = extractRecipeIds(mealPlan.plan);
-    
-    // Get detailed recipe information
-    const recipes = await RecipeModel.find({ 
-      _id: { $in: recipeIds } 
-    })
-    console.log({recipes})
-    // Create a map for quick recipe lookup
-    const recipeMap = recipes.reduce((acc: any, recipe: { _id: { toString: () => string | number; }; }) => {
-      acc[recipe._id.toString()] = recipe;
-      return acc;
-    }, {});
-    
-    // Enrich the plan with recipe details
-    const enrichedPlan = enrichPlanWithRecipes(mealPlan.plan, recipeMap);
-    
-    // Create response object with week range information
-    const response = {
-      ...mealPlan.toObject(),
-      plan: enrichedPlan,
-      weekRange: {
-        start: weekStart,
-        end: weekEnd,
-        formattedRange: `${formatDate(weekStart)} to ${formatDate(weekEnd)}`
-      }
-    };
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Meal plan retrieved successfully',
-      data: response
-    });
-  } catch (error) {
-    console.error('Error getting meal plan by week:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve meal plan',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
-
-/**
- * Format date to YYYY-MM-DD
- */
-function formatDate(date: Date): string {
-  const d = new Date(date);
-  let month = '' + (d.getMonth() + 1);
-  let day = '' + d.getDate();
-  const year = d.getFullYear();
-
-  if (month.length < 2) month = '0' + month;
-  if (day.length < 2) day = '0' + day;
-
-  return [year, month, day].join('-');
-}
-
-
-/**
- * Update an existing meal plan
- */
-export const updateMealPlan = async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    const { name, week, plan, notes, isActive } = req.body;
-    const userId = req.user._id;
-    
-    // Validate ObjectId
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid meal plan ID'
-      });
-    }
-    
-    // Find the meal plan
-    const mealPlan = await MealPlan.findOne({ _id: id, user: userId });
-    
-    if (!mealPlan) {
-      return res.status(404).json({
-        success: false,
-        message: 'Meal plan not found'
-      });
-    }
-    
-    // Update fields if provided
-    if (name) mealPlan.name = name;
-    if (week) {
-      if (!Date.parse(week)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid week format, please provide a valid date'
-        });
-      }
-      mealPlan.week = new Date(week);
-    }
-    
-    // Update plan if provided
-    if (plan) {
-      const recipeIds = extractRecipeIds(plan);
-      
-      if (recipeIds.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No recipe IDs provided in the meal plan'
-        });
-      }
-      
-      // Verify recipes exist and are accessible
-      const validRecipes = await RecipeModel.countDocuments({
-        _id: { $in: recipeIds },
-        $or: [
-          { isPublished: true, isPrivate: false },
-          { user: userId }
-        ]
-      });
-
-      if (validRecipes !== recipeIds.length) {
-        return res.status(400).json({
-          success: false,
-          message: 'One or more recipes do not exist or are not accessible'
-        });
-      }
-      
-      mealPlan.plan = plan;
-    }
-    
-    if (notes !== undefined) mealPlan.notes = notes;
-    if (isActive !== undefined) mealPlan.isActive = isActive;
-    
-    // Save the updated meal plan
-    await mealPlan.save();
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Meal plan updated successfully',
-      data: mealPlan
-    });
-  } catch (error) {
-    console.error('Error updating meal plan:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to update meal plan',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
-
-/**
- * Delete a meal plan
- */
-export const deleteMealPlan = async (req: any, res: any) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user._id;
-    
-    // Validate ObjectId
-    if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid meal plan ID'
-      });
-    }
-    
-    // Delete the meal plan
-    const result = await MealPlan.deleteOne({ _id: id, user: userId });
-    
-    if (result.deletedCount === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Meal plan not found or you do not have permission to delete it'
-      });
-    }
-    
-    return res.status(200).json({
-      success: true,
-      message: 'Meal plan deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting meal plan:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to delete meal plan',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
-  }
-};
 
 /**
  * Helper function to extract recipe IDs from a meal plan
@@ -486,12 +30,8 @@ export function extractRecipeIds(plan: any): string[] {
   return Array.from(recipeIds);
 }
 
-/**
- * Helper function to enrich a meal plan with recipe details
- */
-/**
- * Helper function to enrich a meal plan with recipe details
- */
+// endpoint to get a particular meal plan stats such as no of total meals planned no of days planned notes too and the title of the particularmeal plan
+
 export function enrichPlanWithRecipes(plan: any, recipeMap: any): any {
   const enrichedPlan: any = {};
   
@@ -539,13 +79,8 @@ export function enrichPlanWithRecipes(plan: any, recipeMap: any): any {
   return enrichedPlan;
 }
 
-/**
- * Helper function to embed recipe details into the meal plan
- */
-/**
- * Helper function to embed recipe details into the meal plan
- */
-function embedRecipeDetails(plan: any, recipeMap: any): any {
+
+export function embedRecipeDetails(plan: any, recipeMap: any): any {
   const enrichedPlan: any = {};
   
   // For each day of the week
@@ -582,3 +117,272 @@ function embedRecipeDetails(plan: any, recipeMap: any): any {
   
   return enrichedPlan;
 }
+
+
+
+
+
+export const getMealPlanStats = async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    
+    console.log({id})
+    console.log({userId})
+    
+    // Find the meal plan and verify ownership
+    const mealPlan = await MealPlan.findOne({ _id: id, user: userId });
+    
+    if (!mealPlan) {
+      return res.status(404).json({
+        success: false,
+        message: "Meal plan not found or you don't have access to it"
+      });
+    }
+    
+    // Log the meal plan structure to understand what we're working with
+    console.log("Meal plan structure keys:", Object.keys(mealPlan.toObject()));
+    
+    // Handle the different structure - check if we have a 'plan' property instead of 'meals'
+    if (mealPlan.plan) {
+      console.log("Using 'plan' structure for meal plan");
+      return handlePlanStructure(mealPlan, res);
+    } else if (mealPlan.meals) {
+      console.log("Using 'meals' structure for meal plan");
+      return handleMealsStructure(mealPlan, res);
+    } else {
+      console.log("Unknown meal plan structure:", mealPlan);
+      return res.status(400).json({
+        success: false,
+        message: "Meal plan has an unexpected structure"
+      });
+    }
+    
+  } catch (error) {
+    console.error("Error retrieving meal plan stats:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve meal plan statistics",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+// Handle meal plans with a 'plan' property (days of the week structure)
+function handlePlanStructure(mealPlan: any, res: any) {
+  try {
+    const plan = mealPlan.plan;
+    
+    // Count the number of days in the plan
+    const daysInPlan = Object.keys(plan).length;
+    
+    // Calculate start and end dates based on the meal plan's week property
+    const startDate = new Date(mealPlan.week || mealPlan.startDate);
+    const endDate = new Date(mealPlan.week || mealPlan.startDate);
+    endDate.setDate(endDate.getDate() + daysInPlan - 1);
+    
+    // Initialize counters
+    let totalMeals = 0;
+    const mealsByType: any = {
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      snack: 0
+    };
+    
+    // Set to track unique recipes
+    const uniqueRecipeIds = new Set();
+    
+    // Nutrition totals
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    
+    // Process each day in the plan
+    Object.keys(plan).forEach(day => {
+      const dayPlan = plan[day];
+      
+      // Check for each meal type
+      const mealTypes = ['breakfast', 'lunch', 'dinner', 'snack'];
+      
+      mealTypes.forEach(mealType => {
+        const meal = dayPlan[mealType];
+        
+        if (meal) {
+          // Count the meal
+          mealsByType[mealType]++;
+          totalMeals++;
+          
+          // Track unique recipe
+          if (meal.recipe || meal.recipeId) {
+            const recipeId = (meal.recipe || meal.recipeId).toString();
+            uniqueRecipeIds.add(recipeId);
+          }
+          
+          // Add nutrition data if available
+          const nutrition = meal.nutrition || meal.nutritionInfo;
+          if (nutrition) {
+            totalCalories += nutrition.calories || 0;
+            totalProtein += nutrition.protein || 0;
+            totalCarbs += nutrition.carbs || 0;
+            totalFat += nutrition.fat || 0;
+          }
+        }
+      });
+    });
+    
+    const uniqueRecipeCount = uniqueRecipeIds.size;
+    
+    const avgDailyCalories = daysInPlan > 0 ? Math.round(totalCalories / daysInPlan) : totalCalories;
+    const avgDailyProtein = daysInPlan > 0 ? Math.round(totalProtein / daysInPlan) : totalProtein;
+    const avgDailyCarbs = daysInPlan > 0 ? Math.round(totalCarbs / daysInPlan) : totalCarbs;
+    const avgDailyFat = daysInPlan > 0 ? Math.round(totalFat / daysInPlan) : totalFat;
+    
+    // Compile stats
+    const mealPlanStats = {
+      title: mealPlan.name || mealPlan.title,
+      description: mealPlan.description || "",
+      notes: mealPlan.notes || "",
+      startDate: startDate,
+      endDate: endDate,
+      week: mealPlan.week,
+      numberOfDays: daysInPlan,
+      totalMeals: totalMeals,
+      mealsByType: mealsByType,
+      uniqueRecipes: uniqueRecipeCount,
+      nutritionSummary: {
+        totalCalories,
+        totalProtein,
+        totalCarbs,
+        totalFat,
+        averageDaily: {
+          calories: avgDailyCalories,
+          protein: avgDailyProtein,
+          carbs: avgDailyCarbs,
+          fat: avgDailyFat
+        }
+      },
+      createdAt: mealPlan.createdAt,
+      lastUpdated: mealPlan.updatedAt
+    };
+    
+    return res.status(200).json({
+      success: true,
+      message: "Meal plan statistics retrieved successfully",
+      data: mealPlanStats
+    });
+  } catch (error) {
+    console.error("Error processing plan structure:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error processing meal plan data",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+}
+
+// Handle meal plans with a 'meals' array property (original structure)
+function handleMealsStructure(mealPlan: any, res: any) {
+  try {
+    interface Meal {
+      type: string;
+      recipe?: any;
+      nutritionInfo?: {
+        calories?: number;
+        protein?: number;
+        carbs?: number;
+        fat?: number;
+      };
+    }
+    
+    // Count the number of days planned
+    const startDate = new Date(mealPlan.startDate);
+    const endDate = new Date(mealPlan.endDate || mealPlan.startDate);
+    const daysDifference = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    
+    // Ensure meals is an array and has length property
+    const meals = Array.isArray(mealPlan.meals) ? mealPlan.meals : [];
+    const totalMeals = meals.length;
+    
+    // Count meals by type
+    const mealsByType = {
+      breakfast: meals.filter((meal: Meal) => meal.type === 'breakfast').length,
+      lunch: meals.filter((meal: Meal) => meal.type === 'lunch').length,
+      dinner: meals.filter((meal: Meal) => meal.type === 'dinner').length,
+      snack: meals.filter((meal: Meal) => meal.type === 'snack').length
+    };
+    
+    // Get unique recipes
+    const uniqueRecipeIds = new Set();
+    meals.forEach((meal: Meal) => {
+      if (meal.recipe) {
+        uniqueRecipeIds.add(typeof meal.recipe === 'object' ? 
+          meal.recipe.toString() : meal.recipe);
+      }
+    });
+    const uniqueRecipeCount = uniqueRecipeIds.size;
+    
+    // Calculate nutrition info if available
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    
+    meals.forEach((meal: Meal) => {
+      if (meal.nutritionInfo) {
+        totalCalories += meal.nutritionInfo.calories || 0;
+        totalProtein += meal.nutritionInfo.protein || 0;
+        totalCarbs += meal.nutritionInfo.carbs || 0;
+        totalFat += meal.nutritionInfo.fat || 0;
+      }
+    });
+    
+    // Calculate average daily nutrition
+    const avgDailyCalories = daysDifference > 0 ? Math.round(totalCalories / daysDifference) : totalCalories;
+    const avgDailyProtein = daysDifference > 0 ? Math.round(totalProtein / daysDifference) : totalProtein;
+    const avgDailyCarbs = daysDifference > 0 ? Math.round(totalCarbs / daysDifference) : totalCarbs;
+    const avgDailyFat = daysDifference > 0 ? Math.round(totalFat / daysDifference) : totalFat;
+    
+    // Compile stats
+    const mealPlanStats = {
+      title: mealPlan.title,
+      description: mealPlan.description || "",
+      notes: mealPlan.notes || "",
+      startDate: mealPlan.startDate,
+      endDate: mealPlan.endDate,
+      numberOfDays: daysDifference,
+      totalMeals: totalMeals,
+      mealsByType: mealsByType,
+      uniqueRecipes: uniqueRecipeCount,
+      nutritionSummary: {
+        totalCalories,
+        totalProtein,
+        totalCarbs,
+        totalFat,
+        averageDaily: {
+          calories: avgDailyCalories,
+          protein: avgDailyProtein,
+          carbs: avgDailyCarbs,
+          fat: avgDailyFat
+        }
+      },
+      createdAt: mealPlan.createdAt,
+      lastUpdated: mealPlan.updatedAt
+    };
+    
+    return res.status(200).json({
+      success: true,
+      message: "Meal plan statistics retrieved successfully",
+      data: mealPlanStats
+    });
+  } catch (error) {
+    console.error("Error processing meals structure:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error processing meal plan data",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+}
+

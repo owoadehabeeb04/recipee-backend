@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import RecipeModel from '../../models/recipe';
 import UserModel from '../../models/user';
 import FavoriteModel from '../../models/favoriteRecipe';
+import { AdminRecipeData, BaseRecipeData, UserRecipeData } from '../../types';
+import { addToFavorites } from '../favoritesController';
 
 // GET ALL RECIPES
 console.log('ADMIN IOS HEREEEE!! ');
@@ -171,52 +173,6 @@ export const createRecipe = async (req: any, res: any) => {
       sugar: Number(nutrition?.sugar || 0)
     };
 
-    // Create the base recipe data 
-    // Use proper typing to match your schema
-    interface BaseRecipeData {
-      title: string;
-      description: string;
-      category: string;
-      cookingTime: number;
-      difficulty: string;
-      servings: number;
-      ingredients: any[];
-      steps: string[];
-      featuredImage: string;
-      tips: string[];
-      nutrition: {
-        calories: number;
-        protein: number;
-        carbs: number;
-        fat: number;
-        fiber: number;
-        sugar: number;
-      };
-      isPrivate: boolean;
-      isPublished: boolean;
-      roleCreated: string;
-    }
-
-    // Admin recipe includes these additional fields
-    interface AdminRecipeData extends BaseRecipeData {
-      admin: any;
-      adminId: any;
-      adminDetails: {
-        name: string;
-        email: string;
-        role: string;
-      };
-    }
-
-    // User recipe includes this additional field
-    interface UserRecipeData extends BaseRecipeData {
-      user: any;
-      userDetails: {
-        name: string;
-        email: string;
-        role: string | 'user';
-      }
-    }
 
     // Start with base recipe data
     const baseRecipeData: BaseRecipeData = {
@@ -272,35 +228,37 @@ export const createRecipe = async (req: any, res: any) => {
     
     console.log('Recipe saved successfully with ID:', savedRecipe._id);
 
-    // If the recipe creator is a regular user (not an admin), add to favorites
-    if (userRole === 'user') {
-      try {
-        // Check if the user already has a favorites document
-        let userFavorites = await FavoriteModel.findOne({ user: userId });
-        
-        if (!userFavorites) {
-          // If user doesn't have favorites document yet, create one
-          userFavorites = new FavoriteModel({
-            user: userId,
-            recipes: [savedRecipe._id]
-          });
-          await userFavorites.save();
-          console.log(`Created new favorites document for user ${userId} and added recipe ${savedRecipe._id}`);
+if (userRole === 'user') {
+  try {
+    const mockReq = {
+      body: { recipeId: savedRecipe._id },
+      user: { _id: userId }
+    };
+    
+    // Create a response object that won't actually send anything to the client
+    const mockRes = {
+      status: function(statusCode: any) {
+        console.log(`Favorite add status: ${statusCode}`);
+        return this;
+      },
+      json: function(data: { success: any; message: any; }) {
+        if (data.success) {
+          console.log(`Added recipe ${savedRecipe._id} to user ${userId}'s favorites`);
         } else {
-          // If favorites document exists, add the recipe to it
-          if (!userFavorites.recipe.includes(savedRecipe._id)) {
-            userFavorites.recipe.push(savedRecipe._id);
-            await userFavorites.save();
-            console.log(`Added recipe ${savedRecipe._id} to user ${userId}'s favorites`);
-          }
+          console.log(`Note: ${data.message}`);
         }
-      } catch (favError) {
-        // Don't fail the whole request if adding to favorites fails
-        console.error('Error adding recipe to favorites:', favError);
-        // We'll still return success since the recipe was created
+        return data;
       }
-    }
-
+    };
+    
+    // Call the existing controller function
+    await addToFavorites(mockReq, mockRes);
+    
+  } catch (favError) {
+    // Don't fail the whole request if adding to favorites fails
+    console.error('Error adding recipe to favorites:', favError);
+  }
+}
     return res.status(201).json({
       success: true,
       message: 'Recipe created!',
