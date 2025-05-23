@@ -33,8 +33,7 @@ const generateChatTitle = async (chatId, firstMessage) => {
     try {
         const titleGenerator = new google_genai_1.ChatGoogleGenerativeAI({
             apiKey: process.env.GOOGLE_API_KEY || "",
-            model: "gemini-1.5-flash",
-            maxOutputTokens: 60,
+            model: "gemini-1.5-flash",             maxOutputTokens: 60,
             temperature: 0.2,
         });
         const prompt = `Create a very brief, descriptive title (5 words or less) for a culinary conversation that starts with this message: "${firstMessage}"

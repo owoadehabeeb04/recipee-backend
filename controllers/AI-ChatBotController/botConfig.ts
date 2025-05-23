@@ -9,7 +9,7 @@ import { helpers } from './helpers';
 export const initChatbot = () => {
   const TheAiModel = new ChatGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_API_KEY || "", 
-    model: "gemini-1.5-flash",
+    model: "gemini-2.0-flash-exp", 
     maxOutputTokens: 2048, 
     temperature: 0.7, 
     topP: 0.9, 
