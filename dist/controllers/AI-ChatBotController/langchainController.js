@@ -33,277 +33,27 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.processChatMessage = exports.continueChat = exports.renameChat = exports.deleteChat = exports.getChatMessages = exports.getChats = exports.generateChatTitle = exports.createChat = void 0;
-const aiChatMessage_1 = require("../../models/aiChatMessage");
-const google_genai_1 = require("@langchain/google-genai");
-const google_custom_search_1 = require("@langchain/community/tools/google_custom_search");
-const tools_1 = require("@langchain/core/tools");
-const agents_1 = require("langchain/agents");
+exports.processChatMessageGet = exports.processChatMessage = void 0;
+exports.isFactualQuery = isFactualQuery;
+exports.performGoogleSearch = performGoogleSearch;
 const hub_1 = require("langchain/hub");
+const aiChatMessage_1 = require("../../models/aiChatMessage");
+const chatController_1 = require("./chatController");
+const agents_1 = require("langchain/agents");
+const google_custom_search_1 = require("@langchain/community/tools/google_custom_search");
+const google_genai_1 = require("@langchain/google-genai");
+const tools_1 = require("@langchain/core/tools");
 const botConfig_1 = require("./botConfig");
-const createChat = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        // Use a temporary title - we'll generate a better one after the first message
-        const { title = "New Culinary Conversation" } = req.body;
-        const chat = new aiChatMessage_1.Chat({
-            user: userId,
-            title
-        });
-        await chat.save();
-        return res.status(201).json({
-            success: true,
-            message: "Chat created successfully",
-            data: chat
-        });
-    }
-    catch (error) {
-        console.error("Error creating chat:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to create chat",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.createChat = createChat;
-const generateChatTitle = async (chatId, firstMessage) => {
-    try {
-        const titleGenerator = new google_genai_1.ChatGoogleGenerativeAI({
-            apiKey: process.env.GOOGLE_API_KEY || "",
-            model: "gemini-2.0-flash-exp",
-            maxOutputTokens: 60,
-            temperature: 0.2,
-        });
-        const prompt = `Create a very brief, descriptive title (5 words or less) for a culinary conversation that starts with this message: "${firstMessage}"
-
-The title should clearly indicate the main topic or question. Don't use quotes in your response.
-Examples:
-- For "How do I make sourdough bread at home?" → "Homemade Sourdough Bread Guide"
-- For "What are good substitutes for eggs in baking?" → "Egg Substitutes For Baking"
-- For "Can you give me a weekly meal plan for a vegetarian diet?" → "Vegetarian Meal Plan" 
-
-TITLE (5 words or less):`;
-        const titleResponse = await titleGenerator.invoke(prompt);
-        let title = titleResponse.content.toString().trim();
-        title = title.replace(/^"(.*)"$/, '$1').replace(/^TITLE:?\s*/i, '');
-        if (title.length > 50) {
-            title = title.substring(0, 47) + '...';
-        }
-        // Update the chat with the new title
-        await aiChatMessage_1.Chat.findByIdAndUpdate(chatId, { title });
-        return title;
-    }
-    catch (error) {
-        console.error("Error generating chat title:", error);
-        // If title generation fails, we'll return a generic title based on the message
-        const fallbackTitle = `Chat about ${firstMessage.substring(0, 30)}${firstMessage.length > 30 ? '...' : ''}`;
-        await aiChatMessage_1.Chat.findByIdAndUpdate(chatId, { title: fallbackTitle });
-        return fallbackTitle;
-    }
-};
-exports.generateChatTitle = generateChatTitle;
-const getChats = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        // const { limit = 20, page = 1 } = req.query;
-        // const skip = (Number(page) - 1) * Number(limit);
-        // Get basic chat data first
-        const chats = await aiChatMessage_1.Chat.find({ user: userId })
-            .sort({ updatedAt: -1 });
-        // Get message counts for each chat
-        const chatIds = chats.map(chat => chat._id);
-        const messageCounts = await aiChatMessage_1.Message.aggregate([
-            { $match: { chat: { $in: chatIds } } },
-            { $group: { _id: '$chat', count: { $sum: 1 } } }
-        ]);
-        // Create a map for quick lookup of message counts
-        const messageCountMap = messageCounts.reduce((acc, item) => {
-            acc[item._id.toString()] = item.count;
-            return acc;
-        }, {});
-        // Add message counts to chat objects
-        const chatsWithCounts = chats.map(chat => {
-            const chatObj = chat.toObject();
-            chatObj.messageCount = messageCountMap[chat._id.toString()] || 0;
-            chatObj.remainingMessages = 40 - chatObj.messageCount;
-            return chatObj;
-        });
-        return res.status(200).json({
-            success: true,
-            message: "Chats retrieved successfully",
-            data: chatsWithCounts,
-        });
-    }
-    catch (error) {
-        console.error("Error getting chats:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to get chats",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.getChats = getChats;
-const getChatMessages = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { chatId } = req.params;
-        const { limit = 50, page = 1 } = req.query;
-        const chat = await aiChatMessage_1.Chat.findOne({ _id: chatId, user: userId });
-        if (!chat) {
-            return res.status(404).json({
-                success: false,
-                message: "Chat not found"
-            });
-        }
-        const skip = (Number(page) - 1) * Number(limit);
-        const messages = await aiChatMessage_1.Message.find({ chat: chatId })
-            .sort({ createdAt: 1 })
-            .skip(skip)
-            .limit(Number(limit));
-        const total = await aiChatMessage_1.Message.countDocuments({ chat: chatId });
-        return res.status(200).json({
-            success: true,
-            message: "Messages retrieved successfully",
-            data: messages,
-            pagination: {
-                total,
-                page: Number(page),
-                limit: Number(limit),
-                pages: Math.ceil(total / Number(limit))
-            }
-        });
-    }
-    catch (error) {
-        console.error("Error getting chat messages:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to get chat messages",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.getChatMessages = getChatMessages;
-const deleteChat = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { chatId } = req.params;
-        const chat = await aiChatMessage_1.Chat.findOne({ _id: chatId, user: userId });
-        if (!chat) {
-            return res.status(404).json({
-                success: false,
-                message: "Chat not found"
-            });
-        }
-        // Delete all messages in this chat
-        await aiChatMessage_1.Message.deleteMany({ chat: chatId });
-        // Delete the chat
-        await aiChatMessage_1.Chat.deleteOne({ _id: chatId });
-        return res.status(200).json({
-            success: true,
-            message: "Chat deleted successfully"
-        });
-    }
-    catch (error) {
-        console.error("Error deleting chat:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to delete chat",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.deleteChat = deleteChat;
-const renameChat = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { chatId } = req.params;
-        const { title } = req.body;
-        if (!title || title.trim() === '') {
-            return res.status(400).json({
-                success: false,
-                message: "Title is required"
-            });
-        }
-        const chat = await aiChatMessage_1.Chat.findOne({ _id: chatId, user: userId });
-        if (!chat) {
-            return res.status(404).json({
-                success: false,
-                message: "Chat not found"
-            });
-        }
-        chat.title = title;
-        await chat.save();
-        return res.status(200).json({
-            success: true,
-            message: "Chat renamed successfully",
-            data: chat
-        });
-    }
-    catch (error) {
-        console.error("Error renaming chat:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to rename chat",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.renameChat = renameChat;
-const continueChat = async (req, res) => {
-    try {
-        const userId = req.user._id;
-        const { originalChatId } = req.params;
-        const originalChat = await aiChatMessage_1.Chat.findOne({ _id: originalChatId, user: userId });
-        if (!originalChat) {
-            return res.status(404).json({
-                success: false,
-                message: "Original chat not found"
-            });
-        }
-        const newChat = new aiChatMessage_1.Chat({
-            user: userId,
-            title: `Continued: ${originalChat.title}`,
-            lastMessage: ''
-        });
-        await newChat.save();
-        const lastMessages = await aiChatMessage_1.Message.find({ chat: originalChatId })
-            .sort({ createdAt: -1 })
-            .limit(4);
-        lastMessages.reverse();
-        const summaryContent = `This chat continues a previous conversation. Latest context:\n\n${lastMessages.map(msg => `${msg.role === 'user' ? 'You' : 'AI'}: ${msg.content.substring(0, 100)}${msg.content.length > 100 ? '...' : ''}`).join('\n\n')}`;
-        const summaryMessage = new aiChatMessage_1.Message({
-            chat: newChat._id,
-            content: summaryContent,
-            role: 'assistant'
-        });
-        await summaryMessage.save();
-        return res.status(201).json({
-            success: true,
-            message: "Chat continued successfully",
-            data: {
-                newChat,
-                summaryMessage
-            }
-        });
-    }
-    catch (error) {
-        console.error("Error continuing chat:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Failed to continue chat",
-            error: error instanceof Error ? error.message : "Unknown error"
-        });
-    }
-};
-exports.continueChat = continueChat;
-// New function to process the chatbot message with web search capabilities
+// Modified version of processChatMessage to support both streaming and non-streaming
 const processChatMessage = async (req, res) => {
     try {
         const userId = req.user._id;
         const { chatId } = req.params;
-        const { message } = req.body;
+        const { message, streaming = false } = req.body;
+        // If streaming is requested, redirect to streaming endpoint
+        if (streaming) {
+            return (0, chatController_1.processChatMessageStream)(req, res);
+        }
         if (!message || message.trim() === '') {
             return res.status(400).json({
                 success: false,
@@ -334,7 +84,7 @@ const processChatMessage = async (req, res) => {
         await userMessage.save();
         // Generate a title if this is the first message
         if (messageCount === 0) {
-            (0, exports.generateChatTitle)(chatId, message).catch(err => console.error("Error generating title:", err));
+            (0, chatController_1.generateChatTitle)(chatId, message).catch(err => console.error("Error generating title:", err));
         }
         // Get previous messages for context
         const previousMessages = await aiChatMessage_1.Message.find({ chat: chatId })
@@ -422,7 +172,38 @@ const processChatMessage = async (req, res) => {
     }
 };
 exports.processChatMessage = processChatMessage;
-// Helper function to determine if a query likely needs factual information
+// Add a GET endpoint for simple message queries (optional convenience method)
+const processChatMessageGet = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const { chatId } = req.params;
+        const { message } = req.query;
+        if (!message || message.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: "Message query parameter is required"
+            });
+        }
+        // Convert GET to POST format and delegate to existing function
+        const modifiedReq = {
+            ...req,
+            body: {
+                message: decodeURIComponent(message),
+                streaming: false
+            }
+        };
+        return await (0, exports.processChatMessage)(modifiedReq, res);
+    }
+    catch (error) {
+        console.error("Error in GET message endpoint:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to process message",
+            error: error instanceof Error ? error.message : "Unknown error"
+        });
+    }
+};
+exports.processChatMessageGet = processChatMessageGet;
 function isFactualQuery(query) {
     // Convert to lowercase for easier matching
     const lowerQuery = query.toLowerCase();
@@ -511,36 +292,36 @@ async function generateResponseWithSearch(query, history, userId) {
         });
         // Create a custom prompt for the search agent
         const searchAgentPrompt = `You are ARIA, an advanced culinary AI assistant with web search capabilities.
-
-You have access to a web search tool that can help you find current, factual information to answer user questions accurately.
-
-When using the search tool:
-1. Search for relevant, current information
-2. Synthesize the information clearly and concisely
-3. Cite sources when appropriate using [Source: URL]
-4. Focus on culinary aspects when relevant
-5. Be honest about limitations if search results are insufficient
-
-Previous conversation context:
-${history.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-
-Current date: ${new Date().toLocaleDateString()}
-
-You have access to the following tools:
-{tools}
-
-Use the following format:
-Question: the input question you must answer
-Thought: you should always think about what to do
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-... (this Thought/Action/Action Input/Observation can repeat N times)
-Thought: I now know the final answer
-Final Answer: the final answer to the original input question
-
-Question: {input}
-{agent_scratchpad}`;
+  
+  You have access to a web search tool that can help you find current, factual information to answer user questions accurately.
+  
+  When using the search tool:
+  1. Search for relevant, current information
+  2. Synthesize the information clearly and concisely
+  3. Cite sources when appropriate using [Source: URL]
+  4. Focus on culinary aspects when relevant
+  5. Be honest about limitations if search results are insufficient
+  
+  Previous conversation context:
+  ${history.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+  
+  Current date: ${new Date().toLocaleDateString()}
+  
+  You have access to the following tools:
+  {tools}
+  
+  Use the following format:
+  Question: the input question you must answer
+  Thought: you should always think about what to do
+  Action: the action to take, should be one of [{tool_names}]
+  Action Input: the input to the action
+  Observation: the result of the action
+  ... (this Thought/Action/Action Input/Observation can repeat N times)
+  Thought: I now know the final answer
+  Final Answer: the final answer to the original input question
+  
+  Question: {input}
+  {agent_scratchpad}`;
         try {
             // Pull the React agent prompt from LangChain hub as fallback
             const prompt = await (0, hub_1.pull)("hwchase17/react").catch(() => {
@@ -595,15 +376,15 @@ async function fallbackDirectSearch(query, model) {
         const searchResults = await googleSearchTool.call(query);
         const formattedResults = formatSearchResults(searchResults);
         const prompt = `You are ARIA, an advanced culinary AI assistant. I've searched the web for information about the user's question.
-
-Based on the search results below, provide a helpful, accurate response:
-
-SEARCH RESULTS:
-${formattedResults}
-
-USER QUESTION: ${query}
-
-Please synthesize the information and provide a clear, helpful response. Cite sources when appropriate using [Source: URL].`;
+  
+  Based on the search results below, provide a helpful, accurate response:
+  
+  SEARCH RESULTS:
+  ${formattedResults}
+  
+  USER QUESTION: ${query}
+  
+  Please synthesize the information and provide a clear, helpful response. Cite sources when appropriate using [Source: URL].`;
         const response = await model.invoke(prompt);
         return response.content.toString();
     }
@@ -628,10 +409,10 @@ function formatSearchResults(searchResults) {
             return results.items.slice(0, 5).map((item, index) => {
                 var _a, _b, _c;
                 return `[Result ${index + 1}]
-Title: ${item.title || 'N/A'}
-URL: ${item.link || 'N/A'}
-Description: ${item.snippet || 'N/A'}
-${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metatags) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c['og:description']) ? `Additional Info: ${item.pagemap.metatags[0]['og:description']}` : ''}`;
+  Title: ${item.title || 'N/A'}
+  URL: ${item.link || 'N/A'}
+  Description: ${item.snippet || 'N/A'}
+  ${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metatags) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c['og:description']) ? `Additional Info: ${item.pagemap.metatags[0]['og:description']}` : ''}`;
             }).join('\n\n');
         }
         else {
@@ -643,7 +424,7 @@ ${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metat
         return searchResults.substring(0, 2000);
     }
 }
-// Keep your existing performGoogleSearch function as backup
+// Function to perform Google search using the Custom Search API
 async function performGoogleSearch(query) {
     try {
         const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
@@ -653,7 +434,7 @@ async function performGoogleSearch(query) {
         }
         const encodedQuery = encodeURIComponent(query);
         const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?cx=${cseId}&q=${encodedQuery}&key=${apiKey}&num=5`;
-        console.log("Performing direct Google search...");
+        console.log("Performing Google search...");
         const response = await fetch(searchUrl);
         if (!response.ok) {
             const errorText = await response.text();
@@ -669,10 +450,10 @@ async function performGoogleSearch(query) {
         const snippets = data.items.map((item, i) => {
             var _a, _b, _c;
             return `[Result ${i + 1}]
-Title: ${item.title}
-URL: ${item.link}
-Description: ${item.snippet}
-${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metatags) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c['og:description']) ? `Additional Info: ${item.pagemap.metatags[0]['og:description']}` : ''}`;
+  Title: ${item.title}
+  URL: ${item.link}
+  Description: ${item.snippet}
+  ${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metatags) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c['og:description']) ? `Additional Info: ${item.pagemap.metatags[0]['og:description']}` : ''}`;
         }).join('\n\n');
         return { urls, snippets };
     }
@@ -684,73 +465,21 @@ ${((_c = (_b = (_a = item.pagemap) === null || _a === void 0 ? void 0 : _a.metat
         };
     }
 }
-// Function to perform Google search using the Custom Search API
-// async function performGoogleSearch(query: string): Promise<{urls: string[], snippets: string}> {
-//   try {
-//     const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
-//     const cseId = process.env.GOOGLE_CSE_ID;
-//     if (!apiKey || !cseId) {
-//       throw new Error("Google Search API key or CSE ID not configured");
-//     }
-//     const encodedQuery = encodeURIComponent(query);
-//     const searchUrl = `https://customsearch.googleapis.com/customsearch/v1?cx=${cseId}&q=${encodedQuery}&key=${apiKey}&num=5`;
-//     console.log("Performing Google search...");
-//     const response = await fetch(searchUrl);
-//     if (!response.ok) {
-//       const errorText = await response.text();
-//       throw new Error(`Google search failed: ${response.status} ${response.statusText} - ${errorText}`);
-//     }
-//     const data = await response.json();
-//     if (!data.items || data.items.length === 0) {
-//       return { urls: [], snippets: "No search results found." };
-//     }
-//     // Extract URLs from search results
-//     const urls = data.items.map((item: any) => item.link);
-//     // Create formatted snippets from search results
-//     const snippets = data.items.map((item: any, i: number) => 
-//       `[Result ${i+1}]
-// Title: ${item.title}
-// URL: ${item.link}
-// Description: ${item.snippet}
-// ${item.pagemap?.metatags?.[0]?.['og:description'] ? `Additional Info: ${item.pagemap.metatags[0]['og:description']}` : ''}`
-//     ).join('\n\n');
-//     return { urls, snippets };
-//   } catch (error) {
-//     console.error("Error performing Google search:", error);
-//     return { 
-//       urls: [], 
-//       snippets: `Search failed: ${error instanceof Error ? error.message : "Unknown error"}` 
-//     };
-//   }
-// }
 // Helper function to extract URLs from text (fallback method)
-// function extractUrlsFromSearchResults(searchResults: string): string[] {
-//   try {
-//     const urlRegex = /(https?:\/\/[^\s]+)/g;
-//     const matches = searchResults.match(urlRegex);
-//     if (!matches) return [];
-//     // Filter out duplicates and clean up URLs
-//     const uniqueUrls = [...new Set(matches.map(url => {
-//       return url.replace(/[.,)}\]]+$/, '');
-//     }))];
-//     return uniqueUrls.slice(0, 5); // Limit to 5 URLs
-//   } catch (error) {
-//     console.error("Error extracting URLs from search results:", error);
-//     return [];
-//   }
-// }
-// function extractUrlsFromSearchResults(searchResults: string): string[] {
-//   try {
-//     const urlRegex = /(https?:\/\/[^\s]+)/g;
-//     const matches = searchResults.match(urlRegex);
-//     if (!matches) return [];
-//     // Filter out duplicates and clean up URLs
-//     const uniqueUrls = [...new Set(matches.map(url => {
-//       return url.replace(/[.,)}\]]+$/, '');
-//     }))];
-//     return uniqueUrls.slice(0, 5); // Limit to 5 URLs
-//   } catch (error) {
-//     console.error("Error extracting URLs from search results:", error);
-//     return [];
-//   }
-// }
+function extractUrlsFromSearchResults(searchResults) {
+    try {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        const matches = searchResults.match(urlRegex);
+        if (!matches)
+            return [];
+        // Filter out duplicates and clean up URLs
+        const uniqueUrls = [...new Set(matches.map(url => {
+                return url.replace(/[.,)}\]]+$/, '');
+            }))];
+        return uniqueUrls.slice(0, 5); // Limit to 5 URLs
+    }
+    catch (error) {
+        console.error("Error extracting URLs from search results:", error);
+        return [];
+    }
+}

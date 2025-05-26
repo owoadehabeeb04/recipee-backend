@@ -15,8 +15,8 @@ const helpers_1 = require("./helpers");
 const initChatbot = () => {
     const TheAiModel = new google_genai_1.ChatGoogleGenerativeAI({
         apiKey: process.env.GOOGLE_API_KEY || "",
-        model: "gemini-1.5-flash", 
-                maxOutputTokens: 2048,
+        model: "gemini-2.0-flash-exp",
+        maxOutputTokens: 2048,
         temperature: 0.7,
         topP: 0.9,
     });
