@@ -14,6 +14,7 @@ const user_1 = require("./Routes/user");
 const favorites_1 = require("./Routes/favorites");
 const meal_planner_1 = require("./Routes/meal-planner");
 const AIChatBot_1 = require("./Routes/AIChatBot");
+const review_1 = require("./Routes/review");
 // import cookieParser from "cookie-parser"
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ app.use('/users', user_1.UserRouter);
 app.use('/favorites', favorites_1.FavoriteRouter);
 app.use('/meal-planner', meal_planner_1.MealPlanRouter);
 app.use('/chatbot', AIChatBot_1.AIChatbotRouter);
+app.use('/reviews', review_1.reviewRouter);
 // Mongoose Connection
 if (!mongoUri) {
     throw new Error('MONGODB_URI is not defined');

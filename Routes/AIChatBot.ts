@@ -1,8 +1,9 @@
 import express from 'express';
 import { verifyToken } from '../middleware/authMIddleware';
-import { continueChat, createChat, deleteChat, getChatMessages, getChats, processChatMessage, processChatMessageGet, processChatMessageStream, renameChat } from '../controllers/AI-ChatBotController/chatController';
+import { continueChat, createChat, deleteChat, getChatMessages, getChats,  processChatMessageStream,  renameChat } from '../controllers/AI-ChatBotController/chatController';
 import { saveMessageFeedback, sendMessage } from '../controllers/AI-ChatBotController/messageController';
 import { searchChats } from '../controllers/AI-ChatBotController/searchController';
+import { processChatMessage, processChatMessageGet } from '../controllers/AI-ChatBotController/langchainController';
 
 
 const router = express.Router();

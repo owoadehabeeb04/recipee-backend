@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// CREATE A TRANSPORTER FOR THE NODEMAILER
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -11,8 +10,34 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Remove the manual host/port/secure settings when using 'service: gmail'
+  // Gmail service preset handles these automatically
 });
-console.log('email pass', process.env.EMAIL_PASS);
+
+// Alternative explicit configuration if the above doesn't work
+// const transporter = nodemailer.createTransport({
+//   host: 'smtp.gmail.com',
+//   port: 587,
+//   secure: false, // false for STARTTLS
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS,
+//   },
+//   tls: {
+//     rejectUnauthorized: false
+//   }
+// });
+
+// Test the connection
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('SMTP connection error:', error);
+  } else {
+    console.log('SMTP server is ready to take our messages');
+  }
+});
+
+console.log('email pass', process.env.EMAIL_PASS?.substring(0, 4) + '***'); // Don't log full password
 
 // THE OTP FUNCTION
 
@@ -26,6 +51,7 @@ export const sendOtp = async (email: string, otpCode: string) => {
     };
     const info = await transporter.sendMail(mailOptions);
     console.log(info.response);
+    console.log({info}) 
     return true;
   } catch (error) {
     console.error(error);

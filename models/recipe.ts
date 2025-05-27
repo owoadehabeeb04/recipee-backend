@@ -25,6 +25,9 @@ interface recipe {
   };
   roleCreated: string;
   isPrivate: boolean;
+  averageRating: any;
+  totalReviews: number;
+  ratingDistribution: any;
 }
 
 const recipeSchema = new mongoose.Schema(
@@ -107,14 +110,22 @@ const recipeSchema = new mongoose.Schema(
       required: true,
     },
 
-    ratings: [
-      {
-        userId: { type: String },
-        rating: { type: Number, min: 1, max: 5 },
-        comment: { type: String },
-      },
-    ],
-    averageRating: { type: Number, default: 0 },
+    // ratings: [
+    //   {
+    //     userId: { type: String },
+    //     rating: { type: Number, min: 1, max: 5 },
+    //     comment: { type: String },
+    //   },
+    // ],
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    totalReviews: { type: Number, default: 0, min: 0 },
+    ratingDistribution: {
+      5: { type: Number, default: 0 },
+      4: { type: Number, default: 0 },
+      3: { type: Number, default: 0 },
+      2: { type: Number, default: 0 },
+      1: { type: Number, default: 0 },
+    },
   },
   { timestamps: true }
 );
@@ -126,29 +137,29 @@ recipeSchema.index({
   'ingredients.name': 'text',
 });
 
-// calculating average rate
-recipeSchema.virtual('calculatedRating').get(function () {
-  if (this.ratings.length === 0) {
-    return 0;
-  }
-  const sumRating = this.ratings.reduce(
-    (total, current) => total + (current.rating ?? 0),
-    0
-  );
-  return sumRating / this.ratings.length;
-});
+// // calculating average rate
+// recipeSchema.virtual('calculatedRating').get(function () {
+//   if (this.ratings.length === 0) {
+//     return 0;
+//   }
+//   const sumRating = this.ratings.reduce(
+//     (total, current) => total + (current.rating ?? 0),
+//     0
+//   );
+//   return sumRating / this.ratings.length;
+// });
 
-// Pre-save hook to update average rating
-recipeSchema.pre('save', function (next) {
-  if (this.ratings && this.ratings.length > 0) {
-    const sum = this.ratings.reduce(
-      (total, current) => total + (current.rating ?? 0),
-      0
-    );
-    this.averageRating = sum / this.ratings.length;
-  }
-  next();
-});
+// // Pre-save hook to update average rating
+// recipeSchema.pre('save', function (next) {
+//   if (this.ratings && this.ratings.length > 0) {
+//     const sum = this.ratings.reduce(
+//       (total, current) => total + (current.rating ?? 0),
+//       0
+//     );
+//     this.averageRating = sum / this.ratings.length;
+//   }
+//   next();
+// });
 
 const RecipeModel = mongoose.model<recipe>('recipes', recipeSchema);
 export default RecipeModel;

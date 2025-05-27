@@ -10,6 +10,8 @@ import { UserRouter } from './Routes/user';
 import { FavoriteRouter } from './Routes/favorites';
 import { MealPlanRouter } from './Routes/meal-planner';
 import { AIChatbotRouter } from './Routes/AIChatBot';
+import { reviewRouter } from './Routes/review';
+import { recipeInterractionRouter } from './Routes/recipeInterraction';
 // import cookieParser from "cookie-parser"
 
 const app = express();
@@ -39,6 +41,9 @@ app.use('/users', UserRouter);
 app.use('/favorites', FavoriteRouter);
 app.use('/meal-planner', MealPlanRouter);
 app.use('/chatbot', AIChatbotRouter)
+app.use('/reviews', reviewRouter)
+app.use('/cooking', recipeInterractionRouter)
+
 // Mongoose Connection
 
 if (!mongoUri) {

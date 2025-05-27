@@ -25,6 +25,7 @@ export const verifyEmail = async (req: any, res: any) => {
 
     // Send OTP via email
     const emailSent = await sendOtp(email, otp);
+    console.log({emailSent})
     if (!emailSent) {
       return res.status(400).json({ message: 'Failed to send OTP email' });
     }
