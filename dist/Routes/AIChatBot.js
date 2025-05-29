@@ -10,6 +10,7 @@ const chatController_1 = require("../controllers/AI-ChatBotController/chatContro
 const messageController_1 = require("../controllers/AI-ChatBotController/messageController");
 const searchController_1 = require("../controllers/AI-ChatBotController/searchController");
 const langchainController_1 = require("../controllers/AI-ChatBotController/langchainController");
+const voiceController_1 = require("../controllers/AI-ChatBotController/voiceController");
 const router = express_1.default.Router();
 exports.AIChatbotRouter = router;
 router.use(authMIddleware_1.verifyToken);
@@ -23,9 +24,9 @@ router.post('/chats/:s/continue', chatController_1.continueChat);
 router.post('/messages/:messageId/feedback', messageController_1.saveMessageFeedback);
 router.get('/search', searchController_1.searchChats);
 router.post('/chats/:chatId/messages', authMIddleware_1.verifyToken, langchainController_1.processChatMessage);
-// POST endpoint (primary method)
 router.post('/chats/:chatId/message', langchainController_1.processChatMessage);
-// GET endpoint (convenience method)
 router.get('/chats/:chatId/message', langchainController_1.processChatMessageGet);
-// Streaming endpoint
 router.post('/chats/:chatId/stream', chatController_1.processChatMessageStream);
+router.post('/chats/:chatId/voice', voiceController_1.processVoiceMessage);
+router.post('/chats/:chatId/voice-stream', voiceController_1.processVoiceMessageStream);
+router.post('/test-intent', messageController_1.testIntentDetection);

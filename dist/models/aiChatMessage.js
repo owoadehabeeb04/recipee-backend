@@ -41,9 +41,15 @@ const MessageSchema = new mongoose_1.default.Schema({
         ref: 'Chat',
         required: true
     },
+    isStreaming: {
+        type: Boolean,
+        default: false
+    },
     content: {
         type: String,
-        required: true
+        required: function () {
+            return !this.isStreaming;
+        }
     },
     role: {
         type: String,

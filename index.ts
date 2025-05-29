@@ -12,7 +12,6 @@ import { MealPlanRouter } from './Routes/meal-planner';
 import { AIChatbotRouter } from './Routes/AIChatBot';
 import { reviewRouter } from './Routes/review';
 import { recipeInterractionRouter } from './Routes/recipeInterraction';
-// import cookieParser from "cookie-parser"
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -24,52 +23,61 @@ if (!mongoUri) {
   throw new Error('MONGODB_URI is not defined in environment variables');
 }
 
+// CORS Configuration
 app.use(
   cors({
     origin: [FRONTEND_URL, PRODUCTION_URL],
-    // origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
 );
+
+// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
 app.use('/auth', userRouter);
 app.use('/recipes', RecipeRouter);
 app.use('/users', UserRouter);
 app.use('/favorites', FavoriteRouter);
 app.use('/meal-planner', MealPlanRouter);
-app.use('/chatbot', AIChatbotRouter)
-app.use('/reviews', reviewRouter)
-app.use('/cooking', recipeInterractionRouter)
+app.use('/chatbot', AIChatbotRouter);
+app.use('/reviews', reviewRouter);
+app.use('/cooking', recipeInterractionRouter);
 
-// Mongoose Connection
-
-if (!mongoUri) {
-  throw new Error('MONGODB_URI is not defined');
-}
-
-
-mongoose
-  .connect(mongoUri, {
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-    family: 4, // Force IPv4
-    retryWrites: true,
-    maxPoolSize: 10,
-    w: 'majority',
-    tlsInsecure: true, // Only for development
-  })
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
+// MongoDB Connection with improved settings
+const connectDB = async () => {
+  try {
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 20000, // Increased timeout
+      socketTimeoutMS: 45000,
+      retryWrites: true,
+      maxPoolSize: 10,
+      w: 'majority',
+      // Remove tlsInsecure for production
+    });
+    console.log('✅ MongoDB connected successfully');
+  } catch (error) {
+    console.error('❌ MongoDB connection error:', error);
     process.exit(1);
-  });
+  }
+};
+
+// Connection event handlers
 mongoose.connection.on('error', (err) => {
   console.error('MongoDB connection error:', err);
 });
 
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected');
+});
+
+// Connect to database
+connectDB();
+
+// Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

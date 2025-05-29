@@ -28,6 +28,7 @@ interface recipe {
   averageRating: any;
   totalReviews: number;
   ratingDistribution: any;
+  createdAt: any;
 }
 
 const recipeSchema = new mongoose.Schema(

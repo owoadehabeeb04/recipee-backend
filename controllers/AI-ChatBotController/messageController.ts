@@ -2,7 +2,7 @@ import { chatbotChain } from './botConfig';
 import { helpers } from './helpers';
 import { generateChatTitle } from './chatController';
 import { Chat, Message } from '../../models/aiChatMessage';
-
+import { IntentDetector } from '../../services/intentDetectionSystem';
 
 export const sendMessage = async (req: any, res: any) => {
   try {
@@ -38,7 +38,6 @@ export const sendMessage = async (req: any, res: any) => {
     const isApproachingLimit = messageCount >= 28;
     const remainingPairs = Math.floor((40 - messageCount - 2) / 2);
     
-    // Get previous messages for context
     const previousMessages = await Message.find({ chat: chatId })
       .sort({ createdAt: 1 });
     
@@ -55,41 +54,40 @@ export const sendMessage = async (req: any, res: any) => {
     });
     await userMessage.save();
     
-    // Update chat with latest message and time
-    chat.lastMessage = message.substring(0, 50) + (message.length > 50 ? '...' : '');
-    chat.updatedAt = new Date();
-    
-    // Check if this is the first message and generate a title
-    const isFirstMessage = messageCount === 0;
-    
-    if (isFirstMessage && chat.title === 'New Culinary Conversation') {
-      // Generate title asynchronously
-      generateChatTitle(chatId, message).catch(err => {
-        console.error("Error in background title generation:", err);
-      });
-      
-      // Set temporary title
-      chat.title = `Chat about ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`;
-    }
-    
-    await chat.save();
-    
+    // Detect user intent
     try {
-      // IMPORTANT: Fix for AsyncGenerator error - don't pass full request object
-      // Instead, extract only the necessary user data
+      const intentResult = IntentDetector.detectIntent(message);
+      console.log('Detected intent:', intentResult);
+      
       const userContext = {
         userId: req.user._id,
         username: req.user.username,
         preferences: req.user.preferences || {}
       };
+
+      let aiResponse: string;
       
-      // Process the query through our chatbot chain
-      const aiResponse = await chatbotChain.invoke({
-        input: message,
-        history: history,
-        chatId: chatId,
-        user: userContext // Pass just the user data, not the full request
-      });
+      // Route based on intent
+      switch (intentResult.mode) {
+        case 'database':
+          aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
+          break;
+          
+        case 'smart_request':
+          aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
+          break;
+          
+        case 'general_cooking':
+        default:
+          // Use existing chatbot chain for general cooking advice
+          aiResponse = await chatbotChain.invoke({
+            input: message,
+            history: history,
+            chatId: chatId,
+            user: userContext
+          });
+          break;
+      }
       
       // If approaching limit, append a warning to the AI response
       let finalResponse = aiResponse;
@@ -157,6 +155,19 @@ export const sendMessage = async (req: any, res: any) => {
   }
 };
 
+// Class to handle message related operations
+class MessageHandler {
+  public static async handleDatabaseQuery(intent: any, userContext: any, message: string): Promise<string> {
+    // For now, just return a placeholder - we'll implement actual DB calls next
+    return `I detected you want to ${intent.action} your ${intent.entity}. Let me help you with that! (Database integration coming next...)`;
+  }
+
+  public static async handleSmartRequest(intent: any, userContext: any, message: string): Promise<string> {
+    // For now, just return a placeholder 
+    return `I can help you ${intent.action} a ${intent.entity}! I'll need some information first. (Smart request handling coming next...)`;
+  }
+}
+
 /**
  * Save message feedback (thumbs up/down)
  */
@@ -197,14 +208,79 @@ export const saveMessageFeedback = async (req: any, res: any) => {
     
     return res.status(200).json({
       success: true,
-      message: "Feedback saved successfully",
-      data: message
+    });
+  }
+catch(error){
+  return res.status(500).json({
+    message: 'Internal server error'
+  })
+}
+} ;
+
+
+
+
+
+// Add this new test endpoint at the end of the file
+export const testIntentDetection = async (req: any, res: any) => {
+  try {
+    let { message } = req.body;
+    
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: "Message is required for testing"
+      });
+    }
+
+    // Handle different message formats
+    let messageString: string;
+    if (typeof message === 'string') {
+      messageString = message;
+    } else if (typeof message === 'object' && message.text) {
+      messageString = message.text;
+    } else if (typeof message === 'object' && message.content) {
+      messageString = message.content;
+    } else {
+      messageString = String(message);
+    }
+    
+    console.log('Testing message:', messageString);
+    console.log('Original message type:', typeof message);
+    
+    const intentResult = IntentDetector.detectIntent(messageString);
+    
+    // Add debug info
+    console.log('Intent detection result:', intentResult);
+    console.log('Message analysis:', {
+      original: messageString,
+      lowercase: messageString.toLowerCase(),
+      containsShow: messageString.toLowerCase().includes('show'),
+      containsMe: messageString.toLowerCase().includes('me'),
+      containsMy: messageString.toLowerCase().includes('my'),
+      containsRecipes: messageString.toLowerCase().includes('recipes')
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Intent detected successfully",
+      data: {
+        originalMessage: messageString,
+        detectedIntent: intentResult,
+        explanation: `Detected as: ${intentResult.mode} with confidence: ${intentResult.confidence}`,
+        debug: {
+          containsShow: messageString.toLowerCase().includes('show'),
+          containsMe: messageString.toLowerCase().includes('me'),
+          containsMy: messageString.toLowerCase().includes('my'),
+          containsRecipes: messageString.toLowerCase().includes('recipes')
+        }
+      }
     });
   } catch (error) {
-    console.error("Error saving message feedback:", error);
+    console.error("Error testing intent:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to save feedback",
+      message: "Failed to test intent detection",
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }

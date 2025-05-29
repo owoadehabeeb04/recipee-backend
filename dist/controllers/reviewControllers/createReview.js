@@ -54,7 +54,7 @@ const createReview = async (req, res) => {
             profileImage: req.user.image || null,
             rating,
             comment: comment.trim(),
-            isVerified // ✅ Mark as verified if user actually cooked it
+            isVerified
         });
         await review.save();
         // Update recipe aggregation data

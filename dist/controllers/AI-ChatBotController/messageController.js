@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.saveMessageFeedback = exports.sendMessage = void 0;
+exports.testIntentDetection = exports.saveMessageFeedback = exports.sendMessage = void 0;
 const botConfig_1 = require("./botConfig");
 const helpers_1 = require("./helpers");
-const chatController_1 = require("./chatController");
 const aiChatMessage_1 = require("../../models/aiChatMessage");
+const intentDetectionSystem_1 = require("../../services/intentDetectionSystem");
 const sendMessage = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -33,7 +33,6 @@ const sendMessage = async (req, res) => {
         }
         const isApproachingLimit = messageCount >= 28;
         const remainingPairs = Math.floor((40 - messageCount - 2) / 2);
-        // Get previous messages for context
         const previousMessages = await aiChatMessage_1.Message.find({ chat: chatId })
             .sort({ createdAt: 1 });
         // Format history for the LLM
@@ -45,35 +44,35 @@ const sendMessage = async (req, res) => {
             role: 'user'
         });
         await userMessage.save();
-        // Update chat with latest message and time
-        chat.lastMessage = message.substring(0, 50) + (message.length > 50 ? '...' : '');
-        chat.updatedAt = new Date();
-        // Check if this is the first message and generate a title
-        const isFirstMessage = messageCount === 0;
-        if (isFirstMessage && chat.title === 'New Culinary Conversation') {
-            // Generate title asynchronously
-            (0, chatController_1.generateChatTitle)(chatId, message).catch(err => {
-                console.error("Error in background title generation:", err);
-            });
-            // Set temporary title
-            chat.title = `Chat about ${message.substring(0, 30)}${message.length > 30 ? '...' : ''}`;
-        }
-        await chat.save();
+        // Detect user intent
         try {
-            // IMPORTANT: Fix for AsyncGenerator error - don't pass full request object
-            // Instead, extract only the necessary user data
+            const intentResult = intentDetectionSystem_1.IntentDetector.detectIntent(message);
+            console.log('Detected intent:', intentResult);
             const userContext = {
                 userId: req.user._id,
                 username: req.user.username,
                 preferences: req.user.preferences || {}
             };
-            // Process the query through our chatbot chain
-            const aiResponse = await botConfig_1.chatbotChain.invoke({
-                input: message,
-                history: history,
-                chatId: chatId,
-                user: userContext // Pass just the user data, not the full request
-            });
+            let aiResponse;
+            // Route based on intent
+            switch (intentResult.mode) {
+                case 'database':
+                    aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
+                    break;
+                case 'smart_request':
+                    aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
+                    break;
+                case 'general_cooking':
+                default:
+                    // Use existing chatbot chain for general cooking advice
+                    aiResponse = await botConfig_1.chatbotChain.invoke({
+                        input: message,
+                        history: history,
+                        chatId: chatId,
+                        user: userContext
+                    });
+                    break;
+            }
             // If approaching limit, append a warning to the AI response
             let finalResponse = aiResponse;
             if (isApproachingLimit) {
@@ -137,6 +136,17 @@ const sendMessage = async (req, res) => {
     }
 };
 exports.sendMessage = sendMessage;
+// Class to handle message related operations
+class MessageHandler {
+    static async handleDatabaseQuery(intent, userContext, message) {
+        // For now, just return a placeholder - we'll implement actual DB calls next
+        return `I detected you want to ${intent.action} your ${intent.entity}. Let me help you with that! (Database integration coming next...)`;
+    }
+    static async handleSmartRequest(intent, userContext, message) {
+        // For now, just return a placeholder 
+        return `I can help you ${intent.action} a ${intent.entity}! I'll need some information first. (Smart request handling coming next...)`;
+    }
+}
 /**
  * Save message feedback (thumbs up/down)
  */
@@ -172,17 +182,75 @@ const saveMessageFeedback = async (req, res) => {
         await message.save();
         return res.status(200).json({
             success: true,
-            message: "Feedback saved successfully",
-            data: message
         });
     }
     catch (error) {
-        console.error("Error saving message feedback:", error);
         return res.status(500).json({
-            success: false,
-            message: "Failed to save feedback",
-            error: error instanceof Error ? error.message : "Unknown error"
+            message: 'Internal server error'
         });
     }
 };
 exports.saveMessageFeedback = saveMessageFeedback;
+// Add this new test endpoint at the end of the file
+const testIntentDetection = async (req, res) => {
+    try {
+        let { message } = req.body;
+        if (!message) {
+            return res.status(400).json({
+                success: false,
+                message: "Message is required for testing"
+            });
+        }
+        // Handle different message formats
+        let messageString;
+        if (typeof message === 'string') {
+            messageString = message;
+        }
+        else if (typeof message === 'object' && message.text) {
+            messageString = message.text;
+        }
+        else if (typeof message === 'object' && message.content) {
+            messageString = message.content;
+        }
+        else {
+            messageString = String(message);
+        }
+        console.log('Testing message:', messageString);
+        console.log('Original message type:', typeof message);
+        const intentResult = intentDetectionSystem_1.IntentDetector.detectIntent(messageString);
+        // Add debug info
+        console.log('Intent detection result:', intentResult);
+        console.log('Message analysis:', {
+            original: messageString,
+            lowercase: messageString.toLowerCase(),
+            containsShow: messageString.toLowerCase().includes('show'),
+            containsMe: messageString.toLowerCase().includes('me'),
+            containsMy: messageString.toLowerCase().includes('my'),
+            containsRecipes: messageString.toLowerCase().includes('recipes')
+        });
+        return res.status(200).json({
+            success: true,
+            message: "Intent detected successfully",
+            data: {
+                originalMessage: messageString,
+                detectedIntent: intentResult,
+                explanation: `Detected as: ${intentResult.mode} with confidence: ${intentResult.confidence}`,
+                debug: {
+                    containsShow: messageString.toLowerCase().includes('show'),
+                    containsMe: messageString.toLowerCase().includes('me'),
+                    containsMy: messageString.toLowerCase().includes('my'),
+                    containsRecipes: messageString.toLowerCase().includes('recipes')
+                }
+            }
+        });
+    }
+    catch (error) {
+        console.error("Error testing intent:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to test intent detection",
+            error: error instanceof Error ? error.message : "Unknown error"
+        });
+    }
+};
+exports.testIntentDetection = testIntentDetection;

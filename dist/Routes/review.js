@@ -25,7 +25,7 @@ router.post('/', authMIddleware_1.verifyToken, createReview_1.createReview);
 // Get reviews for a recipe (public)
 router.get('/', getReviews_1.getRecipeReviews);
 // Update a review (requires authentication)
-router.put('/', authMIddleware_1.verifyToken, updateReview_1.updateReview);
+router.patch('/', authMIddleware_1.verifyToken, updateReview_1.updateReview);
 // Delete a review (requires authentication)
 router.delete('/:reviewId', authMIddleware_1.verifyToken, deleteReview_1.deleteReview);
 // Get user's review for a specific recipe (requires authentication)
