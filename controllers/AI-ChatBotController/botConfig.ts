@@ -5,6 +5,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import mongoose from 'mongoose';
 import RecipeModel from '../../models/recipe';
 import { helpers } from './helpers';
+import { AIIntentDetector } from "./AiBasedIntentDetector";
 
 export const initChatbot = () => {
   const TheAiModel = new ChatGoogleGenerativeAI({
@@ -448,6 +449,8 @@ export const initChatbot = () => {
     new MessagesPlaceholder("history"),
     ["human", "{input}"]
   ]);
+  AIIntentDetector.initialize(TheAiModel);
+
   const chain = RunnableSequence.from([
     {
       input: (input) => input.input,

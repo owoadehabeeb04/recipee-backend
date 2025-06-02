@@ -83,7 +83,7 @@ export const updateShoppingListCheckedItems = async (req: any, res: any) => {
         }
   
         // Get ingredients from all recipes
-        const recipes = await RecipeModel.find({ 
+        const recipes: any = await RecipeModel.find({ 
           _id: { $in: recipeIds } 
         }).select('ingredients');
         

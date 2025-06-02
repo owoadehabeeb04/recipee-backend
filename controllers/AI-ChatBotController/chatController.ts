@@ -12,19 +12,21 @@ import { isFactualQuery, performGoogleSearch } from "./langchainController";
 export const createChat = async (req: any, res: any) => {
   try {
     const userId = req.user._id;
-    const { title = "New Culinary Conversation" } = req.body;
     
-    const chat = new Chat({
+    // Create a new chat with a temporary title
+    const newChat = new Chat({
       user: userId,
-      title
+      title: 'New conversation', // Will be updated after first message
+      lastMessage: '',
+      isActive: true
     });
     
-    await chat.save();
+    await newChat.save();
     
     return res.status(201).json({
       success: true,
       message: "Chat created successfully",
-      data: chat
+      data: newChat
     });
   } catch (error) {
     console.error("Error creating chat:", error);
@@ -78,50 +80,76 @@ TITLE (5 words or less):`;
   }
 };
 
-export const getChats = async (req: any, res: any) => {
-    try {
-      const userId = req.user._id;
+export const updateChatTitleAfterMessage = async (chatId: string) => {
+  try {
+    // Get the first message from this chat to use for title generation
+    const firstMessage = await Message.findOne({ chat: chatId }).sort({ createdAt: 1 });
+    const messageContent = firstMessage ? firstMessage.content : "New conversation";
     
-      // Get basic chat data first
-      const chats = await Chat.find({ user: userId })
-        .sort({ updatedAt: -1 });
-        
-      
-      // Get message counts for each chat
-      const chatIds = chats.map(chat => chat._id);
-      const messageCounts = await Message.aggregate([
-        { $match: { chat: { $in: chatIds } } },
-        { $group: { _id: '$chat', count: { $sum: 1 } } }
-      ]);
-      
-      // Create a map for quick lookup of message counts
-      const messageCountMap = messageCounts.reduce((acc, item) => {
-        acc[item._id.toString()] = item.count;
-        return acc;
-      }, {});
-      
-      // Add message counts to chat objects
-      const chatsWithCounts = chats.map(chat => {
-        const chatObj = chat.toObject();
-        chatObj.messageCount = messageCountMap[chat._id.toString()] || 0;
-        chatObj.remainingMessages = 40 - chatObj.messageCount; 
-        return chatObj;
-      });
-      
-      return res.status(200).json({
-        success: true,
-        message: "Chats retrieved successfully",
-        data: chatsWithCounts,
-      });
-    } catch (error) {
-      console.error("Error getting chats:", error);
-      return res.status(500).json({
-        success: false,
-        message: "Failed to get chats",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
+    const generatedTitle = await generateChatTitle(chatId, messageContent);
+    
+    // Only update if we have a meaningful title
+    if (generatedTitle && generatedTitle !== 'New culinary conversation' && 
+        generatedTitle !== 'Culinary discussion') {
+      await Chat.findByIdAndUpdate(chatId, { title: generatedTitle });
+      console.log(`Updated chat ${chatId} with title: "${generatedTitle}"`);
     }
-  };
+  } catch (error) {
+    console.error('Failed to update chat title:', error);
+  }
+};
+
+export const getChats = async (req: any, res: any) => {
+  try {
+    const userId = req.user._id;
+  
+    // Get basic chat data first
+    const chats = await Chat.find({ user: userId })
+      .sort({ updatedAt: -1 });
+    
+    // Get message counts for each chat
+    const chatIds = chats.map(chat => chat._id);
+    const messageCounts = await Message.aggregate([
+      { $match: { chat: { $in: chatIds } } },
+      { $group: { _id: '$chat', count: { $sum: 1 } } }
+    ]);
+    
+    // Create a map for quick lookup of message counts
+    const messageCountMap = messageCounts.reduce((acc, item) => {
+      acc[item._id.toString()] = item.count;
+      return acc;
+    }, {});
+    
+    // Add message counts to chat objects and filter out empty/full chats
+    const chatsWithCounts = chats.map(chat => {
+      const chatObj = chat.toObject();
+      chatObj.messageCount = messageCountMap[chat._id.toString()] || 0;
+      chatObj.remainingMessages = 40 - chatObj.messageCount;
+      
+      // Check if title should be improved
+      if (!chatObj.title || chatObj.title === 'New Chat') {
+        chatObj.title = 'New culinary conversation';
+      }
+      
+      return chatObj;
+    })
+    // Filter out chats with 0 messages or 40 messages
+    .filter(chat => chat.messageCount >= 2);
+    
+    return res.status(200).json({
+      success: true,
+      message: "Active chats retrieved successfully",
+      data: chatsWithCounts,
+    });
+  } catch (error) {
+    console.error("Error getting chats:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to get chats",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
 
 export const getChatMessages = async (req: any, res: any) => {
   try {
@@ -167,7 +195,6 @@ export const getChatMessages = async (req: any, res: any) => {
   }
 };
 
-
 export const deleteChat = async (req: any, res: any) => {
   try {
     const userId = req.user._id;
@@ -200,7 +227,6 @@ export const deleteChat = async (req: any, res: any) => {
     });
   }
 };
-
 
 export const renameChat = async (req: any, res: any) => {
   try {
@@ -240,7 +266,6 @@ export const renameChat = async (req: any, res: any) => {
     });
   }
 };
-
 
 export const continueChat = async (req: any, res: any) => {
   try {
@@ -294,6 +319,68 @@ export const continueChat = async (req: any, res: any) => {
     return res.status(500).json({
       success: false,
       message: "Failed to continue chat",
+      error: error instanceof Error ? error.message : "Unknown error"
+    });
+  }
+};
+
+// Add this function to update chat titles based on content
+export const updateChatTitle = async (req: any, res: any) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user._id;
+    
+    // Find the chat and verify ownership
+    const chat = await Chat.findOne({ _id: chatId, user: userId });
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found or access denied"
+      });
+    }
+    
+    // Get the first few messages to generate a title
+    const messages = await Message.find({ chat: chatId })
+      .sort({ createdAt: 1 })
+      .limit(3);
+      
+    if (messages.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "No messages to generate title from"
+      });
+    }
+    
+    // Take content from user messages to create a title
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    let newTitle = 'New culinary conversation';
+    
+    if (userMessages.length > 0) {
+      // Extract first question/topic from user message
+      const firstMessage = userMessages[0].content;
+      
+      // Generate a better title based on the content
+      if (firstMessage.length > 10) {
+        newTitle = firstMessage.substring(0, 30) + (firstMessage.length > 30 ? '...' : '');
+      } else if (messages[0].content) {
+        newTitle = 'Conversation about ' + messages[0].content.substring(0, 20);
+      }
+    }
+    
+    // Update the chat title
+    chat.title = newTitle;
+    await chat.save();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Chat title updated successfully",
+      data: chat
+    });
+  } catch (error) {
+    console.error("Error updating chat title:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update chat title",
       error: error instanceof Error ? error.message : "Unknown error"
     });
   }
@@ -360,6 +447,9 @@ export const processChatMessageStream = async (req: any, res: any) => {
           console.error("Error generating title:", err)
         );
       }
+
+      // Update chat title after message
+      await updateChatTitleAfterMessage(chatId);
 
       // Get previous messages for context
       const previousMessages = await Message.find({ chat: chatId })

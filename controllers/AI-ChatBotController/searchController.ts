@@ -76,10 +76,7 @@ export const searchChats = async (req: any, res: any) => {
     return res.status(200).json({
       success: true,
       message: "Search results retrieved successfully",
-      data: {
-        chats: matchingChats,
-        messageMatches: matchingMessages
-      }
+      data: matchingChats
     });
   } catch (error) {
     console.error("Error searching chats:", error);

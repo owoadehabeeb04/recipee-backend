@@ -1,9 +1,8 @@
 import { chatbotChain } from './botConfig';
 import { helpers } from './helpers';
-import { generateChatTitle } from './chatController';
 import { Chat, Message } from '../../models/aiChatMessage';
 import { IntentDetector } from '../../services/intentDetectionSystem';
-
+import { MessageHandler } from './messageHandler';
 export const sendMessage = async (req: any, res: any) => {
   try {
     const userId = req.user._id;
@@ -53,6 +52,16 @@ export const sendMessage = async (req: any, res: any) => {
       role: 'user'
     });
     await userMessage.save();
+    
+    // Check if this is the first message or if chat has default title - update title
+    if (messageCount === 0 || chat.title === 'New conversation' || chat.title === 'New culinary conversation') {
+      // Generate chat title based on first message
+      const newTitle = generateChatTitle(message);
+      console.log({newTitle})
+      // Update chat title directly in database
+      await Chat.findByIdAndUpdate(chatId, { title: newTitle });
+      console.log(`Updated chat ${chatId} title to: "${newTitle}"`);
+    }
     
     // Detect user intent
     try {
@@ -110,6 +119,7 @@ export const sendMessage = async (req: any, res: any) => {
         // Future meal planning code here
       }
       
+      // Standard response (no change needed for frontend)
       return res.status(200).json({
         success: true,
         message: "AI response generated successfully",
@@ -154,19 +164,6 @@ export const sendMessage = async (req: any, res: any) => {
     });
   }
 };
-
-// Class to handle message related operations
-class MessageHandler {
-  public static async handleDatabaseQuery(intent: any, userContext: any, message: string): Promise<string> {
-    // For now, just return a placeholder - we'll implement actual DB calls next
-    return `I detected you want to ${intent.action} your ${intent.entity}. Let me help you with that! (Database integration coming next...)`;
-  }
-
-  public static async handleSmartRequest(intent: any, userContext: any, message: string): Promise<string> {
-    // For now, just return a placeholder 
-    return `I can help you ${intent.action} a ${intent.entity}! I'll need some information first. (Smart request handling coming next...)`;
-  }
-}
 
 /**
  * Save message feedback (thumbs up/down)
@@ -285,3 +282,62 @@ export const testIntentDetection = async (req: any, res: any) => {
     });
   }
 };
+
+/**
+ * Generate a meaningful chat title based on message content
+ */
+function generateChatTitle(message: string): string {
+  // Clean up the message
+  const content = message.toLowerCase();
+  
+  // Recipe detection
+  if (content.includes('recipe') || content.includes('how to make')) {
+    // Extract recipe name
+    let recipeName = '';
+    if (content.includes('recipe for')) {
+      recipeName = content.split('recipe for')[1]?.split(/[?.!]|$/)[0]?.trim();
+    } else if (content.includes('how to make')) {
+      recipeName = content.split('how to make')[1]?.split(/[?.!]|$/)[0]?.trim();
+    }
+    
+    if (recipeName && recipeName.length > 2) {
+      return recipeName.charAt(0).toUpperCase() + 
+             recipeName.slice(1, 25) + 
+             (recipeName.length > 25 ? '...' : '') + 
+             ' recipe';
+    }
+  }
+  
+  // Meal planning
+  if (content.includes('meal plan')) {
+    return 'Meal planning discussion';
+  }
+  
+  // Browse recipes
+  if (content.includes('show me recipes') || content.includes('my recipes')) {
+    return 'Recipe collection';
+  }
+  
+  // Cooking techniques
+  if (content.includes('how do i cook') || content.includes('how to cook')) {
+    const technique = content.split('how do i cook')[1]?.split(/[?.!]|$/)[0]?.trim() ||
+                      content.split('how to cook')[1]?.split(/[?.!]|$/)[0]?.trim();
+    if (technique) {
+      return 'Cooking ' + technique.trim();
+    }
+  }
+  
+  // Clean up for general title
+  let cleanContent = content
+    .replace(/[?.,!]/g, '')
+    .replace(/(\b(can|you|me|i|please|hello|hey|hi)\b)/gi, '')
+    .trim();
+    
+  if (cleanContent.length > 5) {
+    return cleanContent.charAt(0).toUpperCase() + 
+           cleanContent.slice(1, 25) + 
+           (cleanContent.length > 25 ? '...' : '');
+  }
+  
+  return 'Culinary conversation';
+}

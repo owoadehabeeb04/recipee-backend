@@ -3,14 +3,17 @@ interface recipe {
   adminName: string;
   adminId: string;
   user: string;
-  adminDetails: string[];
   title: string;
   category: 'breakfast' | 'lunch' | 'dinner' | 'dessert' | 'snack' | 'beverage';
   cookingTime: number;
   description: string;
   difficulty: 'easy' | 'medium' | 'hard';
   featuredImage: string;
-  ingredients: string[];
+  ingredients: {
+    quantity: number | string | any;
+    unit: number | string | any;
+    name: number | string | any;
+  }[];
   servings: number;
   steps: string[];
   tips: string[];
@@ -29,6 +32,16 @@ interface recipe {
   totalReviews: number;
   ratingDistribution: any;
   createdAt: any;
+  userDetails: {
+    name: string
+    role: string;
+    email: string;
+  }
+  adminDetails: {
+    name: string
+    role: string;
+    email: string;
+  }
 }
 
 const recipeSchema = new mongoose.Schema(
