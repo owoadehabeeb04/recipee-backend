@@ -10,7 +10,7 @@ const verifyToken = (req, res, next) => {
     // Check if Authorization header exists
     const authHeader = req.headers.authorization;
     // console.log(req.headers, 'REQqqqq');
-    console.log('AUTH HEADER', authHeader);
+    // console.log('AUTH HEADER', authHeader);
     if (!authHeader) {
         return res.status(401).json({
             success: false,

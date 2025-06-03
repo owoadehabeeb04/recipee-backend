@@ -5,6 +5,7 @@ const botConfig_1 = require("./botConfig");
 const helpers_1 = require("./helpers");
 const aiChatMessage_1 = require("../../models/aiChatMessage");
 const intentDetectionSystem_1 = require("../../services/intentDetectionSystem");
+const messageHandler_1 = require("./messageHandler");
 const sendMessage = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -44,6 +45,15 @@ const sendMessage = async (req, res) => {
             role: 'user'
         });
         await userMessage.save();
+        // Check if this is the first message or if chat has default title - update title
+        if (messageCount === 0 || chat.title === 'New conversation' || chat.title === 'New culinary conversation') {
+            // Generate chat title based on first message
+            const newTitle = generateChatTitle(message);
+            console.log({ newTitle });
+            // Update chat title directly in database
+            await aiChatMessage_1.Chat.findByIdAndUpdate(chatId, { title: newTitle });
+            console.log(`Updated chat ${chatId} title to: "${newTitle}"`);
+        }
         // Detect user intent
         try {
             const intentResult = intentDetectionSystem_1.IntentDetector.detectIntent(message);
@@ -57,10 +67,10 @@ const sendMessage = async (req, res) => {
             // Route based on intent
             switch (intentResult.mode) {
                 case 'database':
-                    aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
+                    aiResponse = await messageHandler_1.MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
                     break;
                 case 'smart_request':
-                    aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
+                    aiResponse = await messageHandler_1.MessageHandler.handleSmartRequest(intentResult, userContext, message);
                     break;
                 case 'general_cooking':
                 default:
@@ -91,6 +101,7 @@ const sendMessage = async (req, res) => {
                 helpers_1.helpers.detectNutritionalGoal(message)) {
                 // Future meal planning code here
             }
+            // Standard response (no change needed for frontend)
             return res.status(200).json({
                 success: true,
                 message: "AI response generated successfully",
@@ -136,17 +147,6 @@ const sendMessage = async (req, res) => {
     }
 };
 exports.sendMessage = sendMessage;
-// Class to handle message related operations
-class MessageHandler {
-    static async handleDatabaseQuery(intent, userContext, message) {
-        // For now, just return a placeholder - we'll implement actual DB calls next
-        return `I detected you want to ${intent.action} your ${intent.entity}. Let me help you with that! (Database integration coming next...)`;
-    }
-    static async handleSmartRequest(intent, userContext, message) {
-        // For now, just return a placeholder 
-        return `I can help you ${intent.action} a ${intent.entity}! I'll need some information first. (Smart request handling coming next...)`;
-    }
-}
 /**
  * Save message feedback (thumbs up/down)
  */
@@ -254,3 +254,55 @@ const testIntentDetection = async (req, res) => {
     }
 };
 exports.testIntentDetection = testIntentDetection;
+/**
+ * Generate a meaningful chat title based on message content
+ */
+function generateChatTitle(message) {
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    // Clean up the message
+    const content = message.toLowerCase();
+    // Recipe detection
+    if (content.includes('recipe') || content.includes('how to make')) {
+        // Extract recipe name
+        let recipeName = '';
+        if (content.includes('recipe for')) {
+            recipeName = (_b = (_a = content.split('recipe for')[1]) === null || _a === void 0 ? void 0 : _a.split(/[?.!]|$/)[0]) === null || _b === void 0 ? void 0 : _b.trim();
+        }
+        else if (content.includes('how to make')) {
+            recipeName = (_d = (_c = content.split('how to make')[1]) === null || _c === void 0 ? void 0 : _c.split(/[?.!]|$/)[0]) === null || _d === void 0 ? void 0 : _d.trim();
+        }
+        if (recipeName && recipeName.length > 2) {
+            return recipeName.charAt(0).toUpperCase() +
+                recipeName.slice(1, 25) +
+                (recipeName.length > 25 ? '...' : '') +
+                ' recipe';
+        }
+    }
+    // Meal planning
+    if (content.includes('meal plan')) {
+        return 'Meal planning discussion';
+    }
+    // Browse recipes
+    if (content.includes('show me recipes') || content.includes('my recipes')) {
+        return 'Recipe collection';
+    }
+    // Cooking techniques
+    if (content.includes('how do i cook') || content.includes('how to cook')) {
+        const technique = ((_f = (_e = content.split('how do i cook')[1]) === null || _e === void 0 ? void 0 : _e.split(/[?.!]|$/)[0]) === null || _f === void 0 ? void 0 : _f.trim()) ||
+            ((_h = (_g = content.split('how to cook')[1]) === null || _g === void 0 ? void 0 : _g.split(/[?.!]|$/)[0]) === null || _h === void 0 ? void 0 : _h.trim());
+        if (technique) {
+            return 'Cooking ' + technique.trim();
+        }
+    }
+    // Clean up for general title
+    let cleanContent = content
+        .replace(/[?.,!]/g, '')
+        .replace(/(\b(can|you|me|i|please|hello|hey|hi)\b)/gi, '')
+        .trim();
+    if (cleanContent.length > 5) {
+        return cleanContent.charAt(0).toUpperCase() +
+            cleanContent.slice(1, 25) +
+            (cleanContent.length > 25 ? '...' : '');
+    }
+    return 'Culinary conversation';
+}

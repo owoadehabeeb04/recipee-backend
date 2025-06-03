@@ -8,7 +8,6 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const recipe_1 = __importDefault(require("../../models/recipe"));
 const favoritesController_1 = require("../favoritesController");
 // GET ALL RECIPES
-console.log('ADMIN IOS HEREEEE!! ');
 const getAllRecipes = async (req, res) => {
     var _a, _b;
     console.log('GETTING ALL RECIPES');

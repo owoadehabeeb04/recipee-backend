@@ -2,7 +2,6 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendOtp = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
@@ -35,11 +34,7 @@ transporter.verify((error, success) => {
     if (error) {
         console.error('SMTP connection error:', error);
     }
-    else {
-        console.log('SMTP server is ready to take our messages');
-    }
 });
-console.log('email pass', ((_a = process.env.EMAIL_PASS) === null || _a === void 0 ? void 0 : _a.substring(0, 4)) + '***'); // Don't log full password
 // THE OTP FUNCTION
 const sendOtp = async (email, otpCode) => {
     try {

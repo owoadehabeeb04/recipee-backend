@@ -6,7 +6,7 @@ export const verifyToken = (req: any, res: any, next: NextFunction) => {
   // Check if Authorization header exists
   const authHeader = req.headers.authorization;
   // console.log(req.headers, 'REQqqqq');
-  console.log('AUTH HEADER', authHeader);
+  // console.log('AUTH HEADER', authHeader);
   if (!authHeader) {
     return res.status(401).json({
       success: false,

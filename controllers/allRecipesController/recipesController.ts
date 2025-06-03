@@ -8,7 +8,6 @@ import { AdminRecipeData, BaseRecipeData, UserRecipeData } from '../../types';
 import { addToFavorites } from '../favoritesController';
 
 // GET ALL RECIPES
-console.log('ADMIN IOS HEREEEE!! ');
 export const getAllRecipes = async (req: any, res: any) => {
   console.log('GETTING ALL RECIPES');
   try {

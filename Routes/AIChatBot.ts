@@ -5,12 +5,16 @@ import { saveMessageFeedback, sendMessage, testIntentDetection } from '../contro
 import { searchChats } from '../controllers/AI-ChatBotController/searchController';
 import { processChatMessage, processChatMessageGet } from '../controllers/AI-ChatBotController/langchainController';
 import { processVoiceMessage, processVoiceMessageStream } from '../controllers/AI-ChatBotController/voiceController';
+import { imageUpload } from '../middleware/imageMiddleware';
+import { processImageMessage, processMultiImageMessage } from '../controllers/AI-ChatBotController/chatbotImages';
+import { culinaryFocusMiddleware } from '../middleware/culinaryFoodFocus';
 
 
 const router = express.Router();
 
 router.use(verifyToken);
 
+router.use(culinaryFocusMiddleware);
 
 router.post('/chats', createChat);
 router.get('/chats', getChats);
@@ -28,8 +32,19 @@ router.post('/chats/:chatId/stream', processChatMessageStream);
 router.post('/chats/:chatId/voice', processVoiceMessage);
 router.post('/chats/:chatId/voice-stream', processVoiceMessageStream);
 
-
-router.post('/test-intent', testIntentDetection);
+router.post(
+    '/chats/:chatId/image',
+    verifyToken,
+    imageUpload.single('image'),
+    processImageMessage
+  );
+  
+  router.post(
+'/chats/:chatId/images',
+    verifyToken,
+    imageUpload.array('images', 5),
+    processMultiImageMessage
+  );
 
 
 export { router as AIChatbotRouter };

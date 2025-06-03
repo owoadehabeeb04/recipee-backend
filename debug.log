@@ -1,0 +1,605 @@
+[2025-06-03T15:07:21.394Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:07:21.572Z] 🚀 Server running on port 3001
+[2025-06-03T15:07:23.479Z] ✅ MongoDB connected successfully
+[2025-06-03T15:09:24.697Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:09:24.905Z] 🚀 Server running on port 3001
+[2025-06-03T15:09:28.805Z] ✅ MongoDB connected successfully
+[2025-06-03T15:10:47.107Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:10:47.300Z] 🚀 Server running on port 3001
+[2025-06-03T15:10:50.838Z] ✅ MongoDB connected successfully
+[2025-06-03T15:13:10.493Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:13:10.882Z] 🚀 Server running on port 3001
+[2025-06-03T15:13:15.084Z] ✅ MongoDB connected successfully
+[2025-06-03T15:22:32.384Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:22:32.635Z] 🚀 Server running on port 3001
+[2025-06-03T15:22:36.711Z] ✅ MongoDB connected successfully
+[2025-06-03T15:23:15.529Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:23:15.713Z] 🚀 Server running on port 3001
+[2025-06-03T15:23:17.101Z] ✅ MongoDB connected successfully
+[2025-06-03T15:27:01.323Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:27:01.515Z] 🚀 Server running on port 3001
+[2025-06-03T15:27:05.575Z] ✅ MongoDB connected successfully
+[2025-06-03T15:27:36.589Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:27:36.781Z] 🚀 Server running on port 3001
+[2025-06-03T15:27:38.117Z] ✅ MongoDB connected successfully
+[2025-06-03T15:27:56.666Z] Generating search-augmented response for: what is this ?
+
+[2025-06-03T15:27:58.082Z] [32m[chain/start][39m [[90m[1m1:chain:AgentExecutor[22m[39m] Entering Chain run with input: {
+  "input": "what is this ?\n"
+}
+[2025-06-03T15:27:58.083Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > [1m2:chain:ReactAgent[22m[39m] Entering Chain run with input: {
+  "input": "what is this ?\n",
+  "steps": []
+}
+[2025-06-03T15:27:58.084Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m3:chain:RunnableAssign[22m[39m] Entering Chain run with input: {
+  "input": ""
+}
+[2025-06-03T15:27:58.084Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > 3:chain:RunnableAssign > [1m4:chain:RunnableMap[22m[39m] Entering Chain run with input: {
+  "input": ""
+}
+[2025-06-03T15:27:58.084Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > 3:chain:RunnableAssign > 4:chain:RunnableMap > [1m5:chain:RunnableLambda[22m[39m] Entering Chain run with input: {
+  "input": ""
+}
+[2025-06-03T15:27:58.085Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > 3:chain:RunnableAssign > 4:chain:RunnableMap > [1m5:chain:RunnableLambda[22m[39m] [1ms] Exiting Chain run with output: {
+  "output": ""
+}
+[2025-06-03T15:27:58.085Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > 3:chain:RunnableAssign > [1m4:chain:RunnableMap[22m[39m] [1ms] Exiting Chain run with output: {
+  "agent_scratchpad": ""
+}
+[2025-06-03T15:27:58.085Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m3:chain:RunnableAssign[22m[39m] [2ms] Exiting Chain run with output: {
+  "input": "what is this ?\n",
+  "steps": [],
+  "agent_scratchpad": ""
+}
+[2025-06-03T15:27:58.086Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m6:prompt:PromptTemplate[22m[39m] Entering Chain run with input: {
+  "input": "what is this ?\n",
+  "steps": [],
+  "agent_scratchpad": ""
+}
+[2025-06-03T15:27:58.091Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m6:prompt:PromptTemplate[22m[39m] [5ms] Exiting Chain run with output: {
+  "lc": 1,
+  "type": "constructor",
+  "id": [
+    "langchain_core",
+    "prompt_values",
+    "StringPromptValue"
+  ],
+  "kwargs": {
+    "value": "Answer the following questions as best you can. You have access to the following tools:\n\nweb_search: Useful for searching the web for current information, facts, statistics, news, and recent developments. Input should be a search query.\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [web_search]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: what is this ?\n\nThought:"
+  }
+}
+[2025-06-03T15:27:58.093Z] [32m[llm/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m7:llm:ChatGoogleGenerativeAI[22m[39m] Entering LLM run with input: {
+  "messages": [
+    [
+      {
+        "lc": 1,
+        "type": "constructor",
+        "id": [
+          "langchain_core",
+          "messages",
+          "HumanMessage"
+        ],
+        "kwargs": {
+          "content": "Answer the following questions as best you can. You have access to the following tools:\n\nweb_search: Useful for searching the web for current information, facts, statistics, news, and recent developments. Input should be a search query.\n\nUse the following format:\n\nQuestion: the input question you must answer\nThought: you should always think about what to do\nAction: the action to take, should be one of [web_search]\nAction Input: the input to the action\nObservation: the result of the action\n... (this Thought/Action/Action Input/Observation can repeat N times)\nThought: I now know the final answer\nFinal Answer: the final answer to the original input question\n\nBegin!\n\nQuestion: what is this ?\n\nThought:",
+          "additional_kwargs": {},
+          "response_metadata": {}
+        }
+      }
+    ]
+  ]
+}
+[2025-06-03T15:27:59.199Z] [36m[llm/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m7:llm:ChatGoogleGenerativeAI[22m[39m] [1.11s] Exiting LLM run with output: {
+  "generations": [
+    [
+      {
+        "text": "The question \"what is this ?\" is incomplete and lacks context. I need more information to understand what \"this\" refers to.\nFinal Answer: The question is unanswerable without more context.\n",
+        "generationInfo": {
+          "finishReason": "STOP"
+        },
+        "message": {
+          "lc": 1,
+          "type": "constructor",
+          "id": [
+            "langchain_core",
+            "messages",
+            "AIMessageChunk"
+          ],
+          "kwargs": {
+            "content": "The question \"what is this ?\" is incomplete and lacks context. I need more information to understand what \"this\" refers to.\nFinal Answer: The question is unanswerable without more context.\n",
+            "additional_kwargs": {},
+            "response_metadata": {
+              "finishReason": "STOP"
+            },
+            "tool_call_chunks": [],
+            "id": "run-6423b113-68d2-4c3f-9d16-13bb3b2d86f1",
+            "usage_metadata": {
+              "input_tokens": 160,
+              "output_tokens": 41,
+              "total_tokens": 201
+            },
+            "tool_calls": [],
+            "invalid_tool_calls": []
+          }
+        }
+      }
+    ]
+  ],
+  "llmOutput": {
+    "tokenUsage": {
+      "promptTokens": 0,
+      "completionTokens": 41,
+      "totalTokens": 41
+    }
+  }
+}
+[2025-06-03T15:27:59.199Z] [32m[chain/start][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m8:parser:ReActSingleInputOutputParser[22m[39m] Entering Chain run with input: {
+  "lc": 1,
+  "type": "constructor",
+  "id": [
+    "langchain_core",
+    "messages",
+    "AIMessageChunk"
+  ],
+  "kwargs": {
+    "content": "The question \"what is this ?\" is incomplete and lacks context. I need more information to understand what \"this\" refers to.\nFinal Answer: The question is unanswerable without more context.\n",
+    "additional_kwargs": {},
+    "response_metadata": {
+      "finishReason": "STOP"
+    },
+    "tool_call_chunks": [],
+    "id": "run-6423b113-68d2-4c3f-9d16-13bb3b2d86f1",
+    "usage_metadata": {
+      "input_tokens": 160,
+      "output_tokens": 41,
+      "total_tokens": 201
+    },
+    "tool_calls": [],
+    "invalid_tool_calls": []
+  }
+}
+[2025-06-03T15:27:59.200Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > 2:chain:ReactAgent > [1m8:parser:ReActSingleInputOutputParser[22m[39m] [1ms] Exiting Chain run with output: {
+  "returnValues": {
+    "output": "The question is unanswerable without more context."
+  },
+  "log": "The question \"what is this ?\" is incomplete and lacks context. I need more information to understand what \"this\" refers to.\nFinal Answer: The question is unanswerable without more context.\n"
+}
+[2025-06-03T15:27:59.200Z] [36m[chain/end][39m [[90m1:chain:AgentExecutor > [1m2:chain:ReactAgent[22m[39m] [1.12s] Exiting Chain run with output: {
+  "returnValues": {
+    "output": "The question is unanswerable without more context."
+  },
+  "log": "The question \"what is this ?\" is incomplete and lacks context. I need more information to understand what \"this\" refers to.\nFinal Answer: The question is unanswerable without more context.\n"
+}
+[2025-06-03T15:27:59.205Z] [36m[chain/end][39m [[90m[1m1:chain:AgentExecutor[22m[39m] [1.12s] Exiting Chain run with output: {
+  "input": "what is this ?\n",
+  "output": "The question is unanswerable without more context."
+}
+[2025-06-03T15:32:13.197Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T15:32:13.370Z] 🚀 Server running on port 3001
+[2025-06-03T15:32:17.609Z] ✅ MongoDB connected successfully
+[2025-06-03T15:38:10.989Z] Processing multiple images: 3
+[2025-06-03T15:38:11.213Z] Processing 3 Cloudinary URLs
+[2025-06-03T15:38:11.492Z] Processed 3 total images
+[2025-06-03T15:38:11.492Z] Creating user message with data: {"hasImages":true,"imageCount":3}
+[2025-06-03T15:42:40.131Z] Processing multiple images: 2
+[2025-06-03T15:42:40.303Z] Processing 2 Cloudinary URLs
+[2025-06-03T15:42:41.421Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748965361419_210.jpg
+[2025-06-03T15:42:41.802Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748965361800_981.jpg
+[2025-06-03T15:42:42.355Z] Processed 2 total images
+[2025-06-03T15:42:42.355Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T15:42:42.686Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T15:42:42.960Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:07:59.691Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T16:07:59.885Z] 🚀 Server running on port 3001
+[2025-06-03T16:08:04.261Z] ✅ MongoDB connected successfully
+[2025-06-03T16:08:55.901Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T16:08:56.094Z] 🚀 Server running on port 3001
+[2025-06-03T16:08:57.514Z] ✅ MongoDB connected successfully
+[2025-06-03T16:15:18.771Z] MongoDB disconnected
+[2025-06-03T16:18:35.653Z] MongoDB disconnected
+[2025-06-03T16:18:51.834Z] ENTERRR!
+[2025-06-03T16:18:51.834Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748967531/Link-sharing-app/btgdbaqo2uhc9wqkyfb5.jpg
+[2025-06-03T16:18:53.759Z] Downloading image from Cloudinary URL
+[2025-06-03T16:18:58.161Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748967538160_199.jpg
+[2025-06-03T16:18:58.162Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748967538160_199.jpg
+[2025-06-03T16:18:58.162Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748967538160_199.jpg
+[2025-06-03T16:18:58.163Z] Model not initialized, initializing now...
+[2025-06-03T16:18:58.163Z] Initializing TensorFlow model...
+[2025-06-03T16:19:03.349Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T16:19:03.353Z] Before save - hasImages: true
+[2025-06-03T16:19:03.354Z] Before save - image count: 1
+[2025-06-03T16:19:03.885Z] After save - hasImages: true
+[2025-06-03T16:19:03.886Z] After save - image count: 1
+[2025-06-03T16:32:18.927Z] Processing multiple images: 2
+[2025-06-03T16:32:20.373Z] Processing 2 Cloudinary URLs
+[2025-06-03T16:32:21.519Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968341518_242.jpg
+[2025-06-03T16:32:21.519Z] Model not initialized, initializing now...
+[2025-06-03T16:32:21.520Z] Initializing TensorFlow model...
+[2025-06-03T16:32:21.626Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968341625_442.jpg
+[2025-06-03T16:32:21.626Z] Model not initialized, initializing now...
+[2025-06-03T16:32:21.626Z] Initializing TensorFlow model...
+[2025-06-03T16:32:23.209Z] Processed 2 total images
+[2025-06-03T16:32:23.209Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:32:23.519Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:32:23.817Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:33:12.873Z] Processing multiple images: 2
+[2025-06-03T16:33:13.029Z] Processing 2 Cloudinary URLs
+[2025-06-03T16:33:13.878Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968393878_865.jpg
+[2025-06-03T16:33:13.879Z] Model not initialized, initializing now...
+[2025-06-03T16:33:13.879Z] Initializing TensorFlow model...
+[2025-06-03T16:33:13.908Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968393907_245.jpg
+[2025-06-03T16:33:13.908Z] Model not initialized, initializing now...
+[2025-06-03T16:33:13.908Z] Initializing TensorFlow model...
+[2025-06-03T16:33:14.740Z] Processed 2 total images
+[2025-06-03T16:33:14.740Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:33:15.030Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:33:15.329Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:39:11.392Z] Processing multiple images: 2
+[2025-06-03T16:39:11.541Z] Processing 2 Cloudinary URLs
+[2025-06-03T16:39:12.453Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968752452_120.jpg
+[2025-06-03T16:39:12.454Z] Model not initialized, initializing now...
+[2025-06-03T16:39:12.454Z] Initializing TensorFlow model...
+[2025-06-03T16:39:12.604Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968752604_159.jpg
+[2025-06-03T16:39:12.604Z] Model not initialized, initializing now...
+[2025-06-03T16:39:12.604Z] Initializing TensorFlow model...
+[2025-06-03T16:39:13.556Z] Processed 2 total images
+[2025-06-03T16:39:13.557Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:39:13.892Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:39:14.202Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T16:40:02.020Z] ENTERRR!
+[2025-06-03T16:40:02.021Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748968801/Link-sharing-app/ypdgpkyljcromfg39ijx.jpg
+[2025-06-03T16:40:02.164Z] Downloading image from Cloudinary URL
+[2025-06-03T16:40:02.791Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968802790_249.jpg
+[2025-06-03T16:40:02.791Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968802790_249.jpg
+[2025-06-03T16:40:02.791Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968802790_249.jpg
+[2025-06-03T16:40:02.791Z] Model not initialized, initializing now...
+[2025-06-03T16:40:02.792Z] Initializing TensorFlow model...
+[2025-06-03T16:40:03.706Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T16:40:03.708Z] Before save - hasImages: true
+[2025-06-03T16:40:03.708Z] Before save - image count: 1
+[2025-06-03T16:40:03.986Z] After save - hasImages: true
+[2025-06-03T16:40:03.986Z] After save - image count: 1
+[2025-06-03T16:41:01.987Z] Processing multiple images: 3
+[2025-06-03T16:41:02.128Z] Processing 3 Cloudinary URLs
+[2025-06-03T16:41:02.763Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968862761_371.jpg
+[2025-06-03T16:41:02.764Z] Model not initialized, initializing now...
+[2025-06-03T16:41:02.764Z] Initializing TensorFlow model...
+[2025-06-03T16:41:02.916Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968862915_692.jpg
+[2025-06-03T16:41:02.916Z] Model not initialized, initializing now...
+[2025-06-03T16:41:02.916Z] Initializing TensorFlow model...
+[2025-06-03T16:41:03.089Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968863053_910.jpg
+[2025-06-03T16:41:03.094Z] Model not initialized, initializing now...
+[2025-06-03T16:41:03.095Z] Initializing TensorFlow model...
+[2025-06-03T16:41:03.948Z] Processed 3 total images
+[2025-06-03T16:41:03.949Z] Creating user message with data: {"hasImages":true,"imageCount":3}
+[2025-06-03T16:41:04.232Z] Retrieved after save: {"hasImages":true,"imageCount":3}
+[2025-06-03T16:41:04.508Z] Sending response with images: {"hasImages":true,"imageCount":3}
+[2025-06-03T16:42:42.807Z] ENTERRR!
+[2025-06-03T16:42:42.808Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748968962/Link-sharing-app/uvxrsonqjt4fisfdlmfm.webp
+[2025-06-03T16:42:42.973Z] Downloading image from Cloudinary URL
+[2025-06-03T16:42:43.739Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968963739_4.jpg
+[2025-06-03T16:42:43.740Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968963739_4.jpg
+[2025-06-03T16:42:43.740Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748968963739_4.jpg
+[2025-06-03T16:42:43.740Z] Model not initialized, initializing now...
+[2025-06-03T16:42:43.740Z] Initializing TensorFlow model...
+[2025-06-03T16:42:44.700Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T16:42:44.701Z] Before save - hasImages: true
+[2025-06-03T16:42:44.702Z] Before save - image count: 1
+[2025-06-03T16:42:44.995Z] After save - hasImages: true
+[2025-06-03T16:42:44.996Z] After save - image count: 1
+[2025-06-03T16:44:50.602Z] ENTERRR!
+[2025-06-03T16:44:50.603Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748969090/Link-sharing-app/mhcfvfislxhq3no9t2mb.webp
+[2025-06-03T16:44:50.760Z] Downloading image from Cloudinary URL
+[2025-06-03T16:44:51.551Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969091550_123.jpg
+[2025-06-03T16:44:51.551Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969091550_123.jpg
+[2025-06-03T16:44:51.551Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969091550_123.jpg
+[2025-06-03T16:44:51.551Z] Model not initialized, initializing now...
+[2025-06-03T16:44:51.551Z] Initializing TensorFlow model...
+[2025-06-03T16:44:52.260Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T16:44:52.261Z] Before save - hasImages: true
+[2025-06-03T16:44:52.261Z] Before save - image count: 1
+[2025-06-03T16:44:52.562Z] After save - hasImages: true
+[2025-06-03T16:44:52.562Z] After save - image count: 1
+[2025-06-03T16:45:36.616Z] Processing multiple images: 0
+[2025-06-03T16:45:50.198Z] ENTERRR!
+[2025-06-03T16:45:50.199Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748969149/Link-sharing-app/b9cilvrkfemrdquzarun.jpg
+[2025-06-03T16:45:50.340Z] Downloading image from Cloudinary URL
+[2025-06-03T16:45:51.448Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969151447_162.jpg
+[2025-06-03T16:45:51.448Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969151447_162.jpg
+[2025-06-03T16:45:51.448Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748969151447_162.jpg
+[2025-06-03T16:45:51.448Z] Model not initialized, initializing now...
+[2025-06-03T16:45:51.448Z] Initializing TensorFlow model...
+[2025-06-03T16:45:52.333Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T16:45:52.345Z] Before save - hasImages: true
+[2025-06-03T16:45:52.347Z] Before save - image count: 1
+[2025-06-03T16:45:52.643Z] After save - hasImages: true
+[2025-06-03T16:45:52.644Z] After save - image count: 1
+[2025-06-03T16:51:16.241Z] Processing multiple images: 0
+[2025-06-03T17:03:14.899Z] Processing multiple images: 2
+[2025-06-03T17:03:15.028Z] Processing 2 Cloudinary URLs
+[2025-06-03T17:03:15.634Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970195633_965.jpg
+[2025-06-03T17:03:15.635Z] Model not initialized, initializing now...
+[2025-06-03T17:03:15.635Z] Initializing TensorFlow model...
+[2025-06-03T17:03:15.922Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970195922_412.jpg
+[2025-06-03T17:03:15.922Z] Model not initialized, initializing now...
+[2025-06-03T17:03:15.923Z] Initializing TensorFlow model...
+[2025-06-03T17:03:16.830Z] Processed 2 total images
+[2025-06-03T17:03:16.830Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:03:17.138Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:03:17.437Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:11:54.480Z] Processing multiple images: 2
+[2025-06-03T17:11:54.655Z] Processing 2 Cloudinary URLs
+[2025-06-03T17:11:55.279Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970715277_837.jpg
+[2025-06-03T17:11:55.280Z] Model not initialized, initializing now...
+[2025-06-03T17:11:55.280Z] Initializing TensorFlow model...
+[2025-06-03T17:11:55.582Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970715581_476.jpg
+[2025-06-03T17:11:55.582Z] Model not initialized, initializing now...
+[2025-06-03T17:11:55.582Z] Initializing TensorFlow model...
+[2025-06-03T17:11:56.355Z] Processed 2 total images
+[2025-06-03T17:11:56.355Z] Creating user message with data: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:11:56.662Z] Retrieved after save: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:11:56.983Z] Sending response with images: {"hasImages":true,"imageCount":2}
+[2025-06-03T17:15:27.972Z] ENTERRR!
+[2025-06-03T17:15:27.973Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748970927/Link-sharing-app/nit2exgvqu4e9ce4kseu.webp
+[2025-06-03T17:15:28.109Z] Downloading image from Cloudinary URL
+[2025-06-03T17:15:29.007Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970929006_283.jpg
+[2025-06-03T17:15:29.007Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970929006_283.jpg
+[2025-06-03T17:15:29.007Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970929006_283.jpg
+[2025-06-03T17:15:29.007Z] Model not initialized, initializing now...
+[2025-06-03T17:15:29.007Z] Initializing TensorFlow model...
+[2025-06-03T17:15:29.865Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T17:15:29.866Z] Before save - hasImages: true
+[2025-06-03T17:15:29.866Z] Before save - image count: 1
+[2025-06-03T17:15:30.182Z] After save - hasImages: true
+[2025-06-03T17:15:30.182Z] After save - image count: 1
+[2025-06-03T17:15:50.074Z] Processing multiple images: 3
+[2025-06-03T17:15:50.218Z] Processing 3 Cloudinary URLs
+[2025-06-03T17:15:50.832Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970950832_755.jpg
+[2025-06-03T17:15:50.832Z] Model not initialized, initializing now...
+[2025-06-03T17:15:50.832Z] Initializing TensorFlow model...
+[2025-06-03T17:15:50.839Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970950839_648.jpg
+[2025-06-03T17:15:50.839Z] Model not initialized, initializing now...
+[2025-06-03T17:15:50.839Z] Initializing TensorFlow model...
+[2025-06-03T17:15:51.133Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748970951133_934.jpg
+[2025-06-03T17:15:51.134Z] Model not initialized, initializing now...
+[2025-06-03T17:15:51.134Z] Initializing TensorFlow model...
+[2025-06-03T17:15:51.806Z] Processed 3 total images
+[2025-06-03T17:15:51.807Z] Creating user message with data: {"hasImages":true,"imageCount":3}
+[2025-06-03T17:15:52.108Z] Retrieved after save: {"hasImages":true,"imageCount":3}
+[2025-06-03T17:15:52.402Z] Sending response with images: {"hasImages":true,"imageCount":3}
+[2025-06-03T18:23:57.744Z] MongoDB disconnected
+[2025-06-03T18:36:01.911Z] MongoDB disconnected
+[2025-06-03T18:47:06.575Z] MongoDB disconnected
+[2025-06-03T18:50:51.951Z] MongoDB disconnected
+[2025-06-03T19:02:07.847Z] ENTERRR!
+[2025-06-03T19:02:07.849Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748977325/Link-sharing-app/wubnysmkmk1uivmj9dcn.avif
+[2025-06-03T19:02:14.549Z] Downloading image from Cloudinary URL
+[2025-06-03T19:02:23.294Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977343290_441.jpg
+[2025-06-03T19:02:23.294Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977343290_441.jpg
+[2025-06-03T19:02:23.294Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977343290_441.jpg
+[2025-06-03T19:02:23.295Z] Model not initialized, initializing now...
+[2025-06-03T19:02:23.295Z] Initializing TensorFlow model...
+[2025-06-03T19:02:30.767Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:02:30.772Z] Before save - hasImages: true
+[2025-06-03T19:02:30.772Z] Before save - image count: 1
+[2025-06-03T19:02:32.192Z] After save - hasImages: true
+[2025-06-03T19:02:32.192Z] After save - image count: 1
+[2025-06-03T19:06:44.956Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:06:45.123Z] 🚀 Server running on port 3001
+[2025-06-03T19:06:56.811Z] ✅ MongoDB connected successfully
+[2025-06-03T19:07:10.228Z] ENTERRR!
+[2025-06-03T19:07:10.229Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748977628/Link-sharing-app/cxszmev3dc3bmrrhiqej.webp
+[2025-06-03T19:07:11.022Z] Downloading image from Cloudinary URL
+[2025-06-03T19:07:15.655Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977635653_508.jpg
+[2025-06-03T19:07:15.655Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977635653_508.jpg
+[2025-06-03T19:07:15.655Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977635653_508.jpg
+[2025-06-03T19:07:15.659Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:07:15.664Z] Before save - hasImages: true
+[2025-06-03T19:07:15.664Z] Before save - image count: 1
+[2025-06-03T19:07:16.214Z] After save - hasImages: true
+[2025-06-03T19:07:16.214Z] After save - image count: 1
+[2025-06-03T19:09:01.932Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:09:02.133Z] 🚀 Server running on port 3001
+[2025-06-03T19:09:10.832Z] ✅ MongoDB connected successfully
+[2025-06-03T19:09:23.080Z] ENTERRR!
+[2025-06-03T19:09:23.080Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748977762/Link-sharing-app/mfhtzx56t0l8ukhccac5.webp
+[2025-06-03T19:09:23.327Z] Downloading image from Cloudinary URL
+[2025-06-03T19:09:27.416Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977767414_724.jpg
+[2025-06-03T19:09:27.416Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977767414_724.jpg
+[2025-06-03T19:09:27.416Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977767414_724.jpg
+[2025-06-03T19:09:39.483Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:09:39.489Z] Before save - hasImages: true
+[2025-06-03T19:09:39.489Z] Before save - image count: 1
+[2025-06-03T19:09:40.513Z] After save - hasImages: true
+[2025-06-03T19:09:40.513Z] After save - image count: 1
+[2025-06-03T19:10:12.328Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:10:12.501Z] 🚀 Server running on port 3001
+[2025-06-03T19:10:21.406Z] ✅ MongoDB connected successfully
+[2025-06-03T19:11:45.410Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:11:45.621Z] 🚀 Server running on port 3001
+[2025-06-03T19:11:47.091Z] MongoDB disconnected
+[2025-06-03T19:12:11.849Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:12:12.028Z] 🚀 Server running on port 3001
+[2025-06-03T19:12:16.694Z] ✅ MongoDB connected successfully
+[2025-06-03T19:12:48.541Z] ENTERRR!
+[2025-06-03T19:12:48.541Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748977968/Link-sharing-app/iy7kwghthfvyzzj5mxv1.webp
+[2025-06-03T19:12:48.706Z] Downloading image from Cloudinary URL
+[2025-06-03T19:12:49.796Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977969795_155.jpg
+[2025-06-03T19:12:49.796Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977969795_155.jpg
+[2025-06-03T19:12:49.796Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748977969795_155.jpg
+[2025-06-03T19:12:50.622Z] Image analysis results: {"tags":["image"],"description":"Image analysis failed","confidence":0,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:12:50.634Z] Before save - hasImages: true
+[2025-06-03T19:12:50.635Z] Before save - image count: 1
+[2025-06-03T19:12:50.932Z] After save - hasImages: true
+[2025-06-03T19:12:50.932Z] After save - image count: 1
+[2025-06-03T19:13:52.518Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:13:52.724Z] 🚀 Server running on port 3001
+[2025-06-03T19:13:54.431Z] ✅ MongoDB connected successfully
+[2025-06-03T19:14:10.523Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:14:10.719Z] 🚀 Server running on port 3001
+[2025-06-03T19:14:12.100Z] ✅ MongoDB connected successfully
+[2025-06-03T19:14:34.399Z] ENTERRR!
+[2025-06-03T19:14:34.399Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748978073/Link-sharing-app/tjljfo9xzilj7texnuoq.webp
+[2025-06-03T19:14:34.550Z] Downloading image from Cloudinary URL
+[2025-06-03T19:14:35.582Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748978075580_390.jpg
+[2025-06-03T19:14:35.582Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748978075580_390.jpg
+[2025-06-03T19:14:35.582Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748978075580_390.jpg
+[2025-06-03T19:14:38.807Z] Image analysis results: {"tags":["Asian Cuisine","Vegetarian","Stir-fry","Comfort Food"],"description":"A bowl of fried rice with vegetables.","confidence":0.95,"foodRecognition":{"isDish":true,"dishName":"Fried Rice","ingredients":["Rice","Broccoli","Carrots","Red Bell Pepper","Sesame seeds","Soy sauce"],"nutritionalInfo":{"calories":800,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:14:38.813Z] Before save - hasImages: true
+[2025-06-03T19:14:38.813Z] Before save - image count: 1
+[2025-06-03T19:14:39.150Z] After save - hasImages: true
+[2025-06-03T19:14:39.150Z] After save - image count: 1
+[2025-06-03T19:15:16.360Z] {"newTitle":"Cooking it"}
+[2025-06-03T19:15:16.514Z] Updated chat 683f46725aaa8529c6eac5a1 title to: "Cooking it"
+[2025-06-03T19:15:16.515Z] IntentDetector: Processing message: provide nutritional information and teach me how to cook it
+
+[2025-06-03T19:15:16.515Z] IntentDetector: Lowercase message: provide nutritional information and teach me how to cook it
+
+[2025-06-03T19:15:16.515Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:15:16.515Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:15:16.515Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:15:16.515Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:23:02.268Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:23:02.620Z] 🚀 Server running on port 3001
+[2025-06-03T19:23:06.837Z] ✅ MongoDB connected successfully
+[2025-06-03T19:29:31.679Z] {"newTitle":"What   make with chicken ..."}
+[2025-06-03T19:29:31.873Z] Updated chat 683f4cc54f539c0e179c4bc4 title to: "What   make with chicken ..."
+[2025-06-03T19:29:31.874Z] IntentDetector: Processing message: What can I make with chicken and broccoli?
+[2025-06-03T19:29:31.874Z] IntentDetector: Lowercase message: what can i make with chicken and broccoli?
+[2025-06-03T19:29:31.874Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:29:31.875Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:29:31.875Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:29:31.875Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:29:46.582Z] IntentDetector: Processing message:     pathname.startsWith('/dashboard/aria') 
+
+[2025-06-03T19:29:46.583Z] IntentDetector: Lowercase message:     pathname.startswith('/dashboard/aria') 
+
+[2025-06-03T19:29:46.584Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:29:46.584Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:29:46.585Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:29:46.585Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:31:01.802Z] IntentDetector: Processing message: teach me coding
+
+[2025-06-03T19:31:01.803Z] IntentDetector: Lowercase message: teach me coding
+
+[2025-06-03T19:31:01.803Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:31:01.803Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:31:01.803Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:31:01.804Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:31:28.742Z] {"newTitle":"Teach  coding"}
+[2025-06-03T19:31:28.898Z] Updated chat 683f4d874f539c0e179c4bdf title to: "Teach  coding"
+[2025-06-03T19:31:28.898Z] IntentDetector: Processing message: teach me coding 
+
+[2025-06-03T19:31:28.898Z] IntentDetector: Lowercase message: teach me coding 
+
+[2025-06-03T19:31:28.898Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:31:28.898Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:31:28.898Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:31:28.898Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:32:44.236Z] {"newTitle":"Who is ronaldo"}
+[2025-06-03T19:32:44.400Z] Updated chat 683f4dd34f539c0e179c4bee title to: "Who is ronaldo"
+[2025-06-03T19:32:44.400Z] IntentDetector: Processing message: who is ronaldo?
+
+[2025-06-03T19:32:44.400Z] IntentDetector: Lowercase message: who is ronaldo?
+
+[2025-06-03T19:32:44.400Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:32:44.400Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:32:44.400Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:32:44.401Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:33:40.169Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:33:40.388Z] 🚀 Server running on port 3001
+[2025-06-03T19:33:44.658Z] ✅ MongoDB connected successfully
+[2025-06-03T19:34:19.862Z] ENTERRR!
+[2025-06-03T19:34:19.863Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748979259/Link-sharing-app/uenk3nnctt7ire22kwok.webp
+[2025-06-03T19:34:20.030Z] Downloading image from Cloudinary URL
+[2025-06-03T19:34:21.660Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748979261658_596.jpg
+[2025-06-03T19:34:21.661Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748979261658_596.jpg
+[2025-06-03T19:34:21.661Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748979261658_596.jpg
+[2025-06-03T19:34:25.153Z] Image analysis results: {"tags":["sports","soccer","football","game"],"description":"The image shows a soccer game in progress. A woman in a white soccer uniform is kicking a soccer ball. There is a referee nearby and other players in the background.","confidence":0.95,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:34:25.160Z] Before save - hasImages: true
+[2025-06-03T19:34:25.160Z] Before save - image count: 1
+[2025-06-03T19:34:25.489Z] After save - hasImages: true
+[2025-06-03T19:34:25.489Z] After save - image count: 1
+[2025-06-03T19:40:29.300Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:40:29.503Z] 🚀 Server running on port 3001
+[2025-06-03T19:40:33.837Z] ✅ MongoDB connected successfully
+[2025-06-03T19:41:40.639Z] {"newTitle":"Who is ronaldo"}
+[2025-06-03T19:41:42.050Z] Updated chat 683f4fe0eb3e9d72755432f2 title to: "Who is ronaldo"
+[2025-06-03T19:41:42.050Z] IntentDetector: Processing message: who is ronaldo
+[2025-06-03T19:41:42.050Z] IntentDetector: Lowercase message: who is ronaldo
+[2025-06-03T19:41:42.050Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:41:42.050Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:41:42.050Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:41:42.051Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:42:28.645Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:42:28.809Z] 🚀 Server running on port 3001
+[2025-06-03T19:42:35.867Z] ✅ MongoDB connected successfully
+[2025-06-03T19:44:50.103Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:44:50.384Z] 🚀 Server running on port 3001
+[2025-06-03T19:44:54.723Z] ✅ MongoDB connected successfully
+[2025-06-03T19:47:43.042Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:47:43.236Z] 🚀 Server running on port 3001
+[2025-06-03T19:47:47.551Z] ✅ MongoDB connected successfully
+[2025-06-03T19:49:22.150Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:49:22.329Z] 🚀 Server running on port 3001
+[2025-06-03T19:49:26.864Z] ✅ MongoDB connected successfully
+[2025-06-03T19:49:35.493Z] {"originalMessage":"Shared an image"}
+[2025-06-03T19:49:35.495Z] ENTERRR!
+[2025-06-03T19:49:35.495Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1748980175/Link-sharing-app/ahpww6ta0kc0fsyymape.webp
+[2025-06-03T19:49:35.663Z] Downloading image from Cloudinary URL
+[2025-06-03T19:49:36.964Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748980176964_399.jpg
+[2025-06-03T19:49:36.965Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748980176964_399.jpg
+[2025-06-03T19:49:36.965Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1748980176964_399.jpg
+[2025-06-03T19:49:41.139Z] Image analysis results: {"tags":["sports","soccer","not food"],"description":"The image shows a soccer player kicking a ball during a match.  It's a sporting event, not food related.","confidence":0.95,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-03T19:49:41.146Z] Before save - hasImages: true
+[2025-06-03T19:49:41.146Z] Before save - image count: 1
+[2025-06-03T19:49:41.502Z] After save - hasImages: true
+[2025-06-03T19:49:41.502Z] After save - image count: 1
+[2025-06-03T19:50:15.031Z] {"originalMessage":"what can you say about it\n"}
+[2025-06-03T19:50:15.673Z] IntentDetector: Processing message: what can you say about it
+
+[2025-06-03T19:50:15.673Z] IntentDetector: Lowercase message: what can you say about it
+
+[2025-06-03T19:50:15.673Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:50:15.673Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:50:15.673Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:50:15.674Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:51:49.169Z] {"originalMessage":""}
+[2025-06-03T19:51:49.409Z] {"originalMessage":""}
+[2025-06-03T19:51:49.489Z] {"originalMessage":""}
+[2025-06-03T19:54:18.008Z] {"originalMessage":""}
+[2025-06-03T19:54:18.341Z] {"originalMessage":""}
+[2025-06-03T19:54:28.896Z] {"originalMessage":"i wpuld l;iek to change my password\n"}
+[2025-06-03T19:54:29.683Z] {"newTitle":"Wpuld l;iek to change my ..."}
+[2025-06-03T19:54:29.875Z] Updated chat 683f52ea2165d6916dd50b2a title to: "Wpuld l;iek to change my ..."
+[2025-06-03T19:54:29.877Z] IntentDetector: Processing message: i wpuld l;iek to change my password
+
+[2025-06-03T19:54:29.882Z] IntentDetector: Lowercase message: i wpuld l;iek to change my password
+
+[2025-06-03T19:54:29.890Z] IntentDetector: Database check - hasPersonal: true hasEntity: false
+[2025-06-03T19:54:29.896Z] IntentDetector: Smart request check - hasAction: true hasEntity: true
+[2025-06-03T19:54:29.899Z] IntentDetector: Detected as smart request
+[2025-06-03T19:54:29.917Z] Detected intent: {"mode":"smart_request","action":"change","entity":"password","confidence":0.8,"requiredParams":["currentPassword","newPassword","confirmPassword"]}
+[2025-06-03T19:54:49.585Z] {"originalMessage":"continue ?\n\n"}
+[2025-06-03T19:54:50.243Z] IntentDetector: Processing message: continue ?
+
+
+[2025-06-03T19:54:50.243Z] IntentDetector: Lowercase message: continue ?
+
+
+[2025-06-03T19:54:50.244Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-03T19:54:50.244Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-03T19:54:50.244Z] IntentDetector: Defaulting to general cooking
+[2025-06-03T19:54:50.244Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-03T19:57:20.577Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:57:20.783Z] 🚀 Server running on port 3001
+[2025-06-03T19:57:31.151Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:57:31.326Z] 🚀 Server running on port 3001
+[2025-06-03T19:57:33.673Z] ✅ MongoDB connected successfully
+[2025-06-03T19:58:09.713Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:58:09.913Z] 🚀 Server running on port 3001
+[2025-06-03T19:58:11.422Z] ✅ MongoDB connected successfully
+[2025-06-03T19:58:38.359Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T19:58:38.623Z] 🚀 Server running on port 3001
+[2025-06-03T20:00:00.387Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-03T20:00:00.658Z] 🚀 Server running on port 3001
+[2025-06-03T20:00:06.645Z] ✅ MongoDB connected successfully

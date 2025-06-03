@@ -32,12 +32,9 @@ const transporter = nodemailer.createTransport({
 transporter.verify((error, success) => {
   if (error) {
     console.error('SMTP connection error:', error);
-  } else {
-    console.log('SMTP server is ready to take our messages');
   }
 });
 
-console.log('email pass', process.env.EMAIL_PASS?.substring(0, 4) + '***'); // Don't log full password
 
 // THE OTP FUNCTION
 

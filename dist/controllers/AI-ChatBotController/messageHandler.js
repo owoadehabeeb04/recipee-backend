@@ -3,61 +3,317 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MessageHandler = void 0;
+exports.NLUHelper = exports.MessageHandler = void 0;
 const recipe_1 = __importDefault(require("../../models/recipe"));
+const favoriteRecipe_1 = __importDefault(require("../../models/favoriteRecipe"));
+const user_1 = __importDefault(require("../../models/user"));
+const AiBasedIntentDetector_1 = require("./AiBasedIntentDetector");
+const meal_planner_1 = __importDefault(require("../../models/meal-planner"));
 class MessageHandler {
     static async handleDatabaseQuery(intent, userContext, message) {
-        const { action, entity } = intent;
-        const userId = userContext.userId;
         try {
-            switch (entity) {
-                case 'recipes':
-                    return await this.handleRecipeQueries(action, userId, message);
-                case 'favorites':
-                    return await this.handleFavoriteQueries(action, userId, message);
-                default:
-                    return `I can help you with your ${entity}, but I need more specific information. What would you like to know?`;
+            // Use AI to determine intent instead of hardcoded rules
+            const aiIntent = await AiBasedIntentDetector_1.AIIntentDetector.detectIntent(message);
+            const userId = userContext.userId;
+            console.log('AI detected intent:', aiIntent); // For debugging
+            // If confidence is too low, fall back to clarification
+            if (aiIntent.confidence < 0.6) {
+                return `I'm not completely sure what you're looking for. Please try more specific wording.`;
             }
+            // Handle intent based on AI classification
+            switch (aiIntent.category) {
+                case 'showUserRecipes':
+                    return await this.getAllUserRecipes(userId);
+                case 'recentRecipes':
+                    return await this.getRecentRecipes(userId);
+                case 'recipeStats':
+                    return await this.getRecipeStats(userId);
+                case 'searchRecipes':
+                    // If we have a specific search query identified by AI
+                    if (aiIntent.searchQuery) {
+                        // Use the AI-extracted search term instead of parsing it ourselves
+                        return await this.searchUserRecipes(userId, aiIntent.searchQuery);
+                    }
+                    else {
+                        return await this.searchUserRecipes(userId, message);
+                    }
+                case 'createMealPlan':
+                    return await this.handleMealPlanCreation(userId, aiIntent, message);
+                case 'viewMealPlan':
+                    return await this.handleViewMealPlan(userId, message);
+                case 'publicRecipes':
+                    return await this.getPublicRecipes();
+                case 'specificRecipe':
+                    // If the AI detected a recipe number
+                    if (aiIntent.recipeNumber) {
+                        return await this.getRecipeByNumber(userId, aiIntent.recipeNumber);
+                    }
+                    // If the AI detected a recipe name
+                    else if (aiIntent.recipeName) {
+                        // If user-specific, check their collection first
+                        if (aiIntent.isUserSpecific) {
+                            return await this.getRecipeByName(userId, aiIntent.recipeName);
+                        }
+                        else {
+                            return await this.checkAndHandleRecipeQuery(userId, aiIntent.recipeName);
+                        }
+                    }
+                    break;
+                case 'cookingInstructions':
+                    if (aiIntent.recipeName) {
+                        return await this.checkAndHandleRecipeQuery(userId, aiIntent.recipeName);
+                    }
+                    break;
+                case 'createRecipe':
+                    if (aiIntent.recipeName) {
+                        return this.startRecipeCreationProcess(userId, aiIntent.recipeName);
+                    }
+                    else {
+                        return "What kind of recipe would you like to create?";
+                    }
+                case 'userProfile':
+                    return await this.handleUserProfileQuery(userId, message, aiIntent.userProfileField);
+                case 'greeting':
+                    return await this.createPersonalizedGreeting(userId, aiIntent.isGreeting || false);
+                default:
+                    // Fall back to traditional handling if AI gives unexpected result
+                    return this.fallbackHandling(message, userId);
+            }
+            // If we get here, something went wrong with intent handling
+            return this.fallbackHandling(message, userId);
         }
         catch (error) {
             console.error('Database query error:', error);
             return "I'm having trouble accessing your data right now. Please try again in a moment.";
         }
     }
-    static async handleRecipeQueries(action, userId, message) {
+    static async fallbackHandling(message, userId) {
         const lowerMessage = message.toLowerCase();
-        // Different types of recipe queries
-        if (lowerMessage.includes('recent') || lowerMessage.includes('latest')) {
-            return await this.getRecentRecipes(userId);
+        if (lowerMessage.includes('my') && lowerMessage.includes('recipe')) {
+            return await this.getAllUserRecipes(userId);
         }
-        if (lowerMessage.includes('stats') || lowerMessage.includes('statistics')) {
-            return await this.getRecipeStats(userId);
+        return `I'm not sure what recipe information you're looking for. You can ask me to:\n\n- Show your recipes\n- Show your recent recipes\n- Get recipe statistics\n- Search for specific recipes\n- Show public recipes\n- Get cooking instructions for a dish`;
+    }
+    static startRecipeCreationProcess(userId, recipeName) {
+        return `Let's create a new recipe for ${recipeName}! Please provide the following details:\n\n` +
+            `1. Main ingredients\n` +
+            `2. Cooking time (in minutes)\n` +
+            `3. Difficulty level (easy, medium, hard)\n` +
+            `4. Number of servings\n\n` +
+            `You can provide this information all at once or one by one.`;
+    }
+    static async checkAndHandleRecipeQuery(userId, message) {
+        try {
+            // Extract recipe name from the message
+            let recipeName = message.toLowerCase();
+            // Remove common phrases
+            const phrasesToRemove = [
+                'how to make', 'show me', 'tell me about', 'details for',
+                'recipe for', 'how do i cook', 'how do i make', 'show recipe for'
+            ];
+            phrasesToRemove.forEach(phrase => {
+                recipeName = recipeName.replace(phrase, '');
+            });
+            recipeName = recipeName.trim();
+            if (!recipeName) {
+                return "What recipe would you like to know about? Please specify a dish name.";
+            }
+            // First check if they have this recipe in their own collection
+            const userRecipes = await recipe_1.default.find({
+                user: userId,
+                title: { $regex: recipeName, $options: 'i' }
+            }).sort({ createdAt: -1 }).limit(3);
+            // Then check for published recipes in the entire system
+            const publicRecipes = await recipe_1.default.find({
+                isPublished: true, // Only get published recipes
+                title: { $regex: recipeName, $options: 'i' }
+            }).sort({ averageRating: -1 }).limit(3); // Sort by highest rating
+            // Determine what options to show
+            const hasUserRecipes = userRecipes.length > 0;
+            const hasPublicRecipes = publicRecipes.length > 0;
+            if (hasUserRecipes && hasPublicRecipes) {
+                // They have both personal and public matches
+                const userList = userRecipes.map((recipe, index) => `${index + 1}. ${recipe.title} (Your recipe)`).join('\n');
+                const publicList = publicRecipes.map((recipe, index) => { var _a, _b; return `${index + 1}. ${recipe.title} (⭐ ${recipe.averageRating.toFixed(1)}) - by ${((_a = recipe.userDetails) === null || _a === void 0 ? void 0 : _a.name) || ((_b = recipe.adminDetails) === null || _b === void 0 ? void 0 : _b.name) || 'Unknown'}`; }).join('\n');
+                return `I found recipes for "${recipeName}" in both your collection and our public database:\n\n**Your Recipes:**\n${userList}\n\n**Public Recipes:**\n${publicList}\n\nWhich would you like to see? You can say:\n- "Show my recipe #1"\n- "Show public recipe #2"\n- "General instructions please"`;
+            }
+            else if (hasUserRecipes) {
+                // They only have personal matches
+                const userList = userRecipes.map((recipe, index) => `${index + 1}. ${recipe.title}`).join('\n');
+                return `I found these matching recipes in your collection:\n\n${userList}\n\nWould you like to see one of these, or get general cooking instructions for "${recipeName}"?\n\nYou can say:\n- "Show my recipe #1"\n- "General instructions please"`;
+            }
+            else if (hasPublicRecipes) {
+                // Only public matches available
+                const publicList = publicRecipes.map((recipe, index) => { var _a, _b; return `${index + 1}. ${recipe.title} (⭐ ${recipe.averageRating.toFixed(1)}) - by ${((_a = recipe.userDetails) === null || _a === void 0 ? void 0 : _a.name) || ((_b = recipe.adminDetails) === null || _b === void 0 ? void 0 : _b.name) || 'Unknown'}`; }).join('\n');
+                return `I found these "${recipeName}" recipes in our public collection:\n\n${publicList}\n\nWould you like to see one of these, or get general cooking instructions?\n\nYou can say:\n- "Show recipe #1"\n- "General instructions please"`;
+            }
+            else {
+                // No matching recipes anywhere in the system
+                return `I couldn't find any recipes for "${recipeName}" in our database. Would you like:\n\n1. General cooking instructions for ${recipeName}\n2. Help creating a new ${recipeName} recipe for your collection`;
+            }
         }
-        if (lowerMessage.includes('search') || lowerMessage.includes('find')) {
-            return await this.searchUserRecipes(userId, message);
+        catch (error) {
+            console.error('Error checking recipe query:', error);
+            return "Sorry, I had trouble processing your recipe request.";
         }
-        // Default: show all user recipes
-        return await this.getAllUserRecipes(userId);
+    }
+    static async getRecipeByNumber(userId, recipeNumber) {
+        try {
+            // First get the most recent recipes to get the one with the matching number
+            const recipes = await recipe_1.default.find({ user: userId })
+                .sort({ createdAt: -1 })
+                .limit(15);
+            if (recipes.length === 0) {
+                return "You don't have any recipes in your collection yet.";
+            }
+            // Adjust for 0-based array vs. 1-based user numbering
+            const index = recipeNumber - 1;
+            if (index < 0 || index >= recipes.length) {
+                return `I couldn't find recipe #${recipeNumber}. Please choose a number between 1 and ${recipes.length}.`;
+            }
+            // Get the full details of the recipe
+            return await this.getRecipeDetails(recipes[index]._id);
+        }
+        catch (error) {
+            console.error('Error fetching recipe by number:', error);
+            return "Sorry, I had trouble finding that recipe.";
+        }
+    }
+    static async getRecipeByName(userId, message) {
+        try {
+            // Extract recipe name from the message
+            let recipeName = message.toLowerCase();
+            // Remove common phrases
+            const phrasesToRemove = [
+                'how to make', 'show me', 'tell me about', 'details for',
+                'recipe for', 'how do i cook', 'how do i make', 'show recipe for'
+            ];
+            phrasesToRemove.forEach(phrase => {
+                recipeName = recipeName.replace(phrase, '');
+            });
+            recipeName = recipeName.trim();
+            if (!recipeName) {
+                return "Which recipe would you like to know about? Please specify a recipe name.";
+            }
+            // Find recipes that match the name
+            const matchingRecipes = await recipe_1.default.find({
+                user: userId,
+                title: { $regex: recipeName, $options: 'i' }
+            }).sort({ createdAt: -1 }).limit(5);
+            if (matchingRecipes.length === 0) {
+                return `I couldn't find any recipe matching "${recipeName}" in your collection. Would you like me to help you create a new recipe?`;
+            }
+            if (matchingRecipes.length === 1) {
+                // If only one result, show full details
+                return await this.getRecipeDetails(matchingRecipes[0]._id);
+            }
+            else {
+                // If multiple results, show a list to choose from
+                const recipeList = matchingRecipes.map((recipe, index) => `${index + 1}. **${recipe.title}** (${recipe.difficulty || 'Medium'}, ${recipe.cookingTime || '?'} mins)`).join('\n');
+                return `I found multiple recipes matching "${recipeName}":\n\n${recipeList}\n\nWhich one would you like to see? Reply with "show recipe #" followed by the number.`;
+            }
+        }
+        catch (error) {
+            console.error('Error fetching recipe by name:', error);
+            return "Sorry, I had trouble finding that recipe.";
+        }
     }
     static async getAllUserRecipes(userId) {
         try {
             const recipes = await recipe_1.default.find({ user: userId })
                 .sort({ createdAt: -1 })
-                .limit(15)
-                .select('title cuisine difficulty cookingTime createdAt');
+                .limit(15);
             if (recipes.length === 0) {
                 return "You don't have any saved recipes yet! 🍳\n\nWould you like me to help you create your first recipe? Just tell me what you'd like to cook!";
             }
-            const recipeList = recipes.map((recipe, index) => {
-                const time = recipe.cookingTime ? `⏱️ ${recipe.cookingTime}` : '';
-                const difficulty = recipe.difficulty ? `📊 ${recipe.difficulty}` : '';
-                return `${index + 1}. **${recipe.title}** \n   ${time} ${difficulty}`;
-            }).join('\n\n');
+            const recipeList = this.formatRecipeList(recipes);
             return `Here are your saved recipes (${recipes.length} total):\n\n${recipeList}\n\n💡 *Want details for any recipe? Just ask "show me recipe [number]" or "tell me about [recipe name]"*`;
         }
         catch (error) {
             console.error('Error fetching user recipes:', error);
             return "Sorry, I couldn't fetch your recipes right now. Please try again.";
+        }
+    }
+    static async getPublicRecipes() {
+        try {
+            const publicRecipes = await recipe_1.default.find({
+                isPublished: true // Using isPublished instead of public based on your schema
+            })
+                .sort({ createdAt: -1 })
+                .limit(10);
+            if (publicRecipes.length === 0) {
+                return "I couldn't find any public recipes at the moment. Would you like to see recipes from your personal collection instead?";
+            }
+            const recipeList = this.formatRecipeList(publicRecipes);
+            return `Here are some recipes from our public collection:\n\n${recipeList}\n\n*Want to see your own recipes instead? Just ask for "my recipes"!*`;
+        }
+        catch (error) {
+            console.error('Error fetching public recipes:', error);
+            return "Sorry, I couldn't fetch public recipes right now. Would you like to see your personal recipes instead?";
+        }
+    }
+    // Add a method to get detailed recipe info
+    static async getRecipeDetails(recipeId) {
+        var _a, _b;
+        try {
+            const recipe = await recipe_1.default.findById(recipeId);
+            if (!recipe) {
+                return "Sorry, I couldn't find that recipe.";
+            }
+            // Format ingredients
+            const ingredientsList = recipe.ingredients.map(ing => `• ${ing.quantity} ${ing.unit} ${ing.name}`).join('\n');
+            // Format steps
+            const stepsList = recipe.steps.map((step, i) => `${i + 1}. ${step}`).join('\n\n');
+            // Format nutrition
+            const nutrition = `
+      • Calories: ${recipe.nutrition.calories}
+      • Protein: ${recipe.nutrition.protein}g
+      • Carbs: ${recipe.nutrition.carbs}g
+      • Fat: ${recipe.nutrition.fat}g
+      • Fiber: ${recipe.nutrition.fiber}g
+      • Sugar: ${recipe.nutrition.sugar}g
+      `;
+            // Format tips if they exist
+            const tips = recipe.tips && recipe.tips.length > 0
+                ? `\n\n**Cooking Tips:**\n${recipe.tips.map(tip => `• ${tip}`).join('\n')}`
+                : '';
+            // Format ratings
+            let ratingInfo = "";
+            if (recipe.averageRating > 0) {
+                ratingInfo = `\n\n**Rating:** ⭐ ${recipe.averageRating.toFixed(1)}/5.0 (${recipe.totalReviews} ${recipe.totalReviews === 1 ? 'review' : 'reviews'})`;
+                if (recipe.ratingDistribution) {
+                    ratingInfo += `\n**Rating Breakdown:**
+          • 5 stars: ${recipe.ratingDistribution['5']} ratings
+          • 4 stars: ${recipe.ratingDistribution['4']} ratings
+          • 3 stars: ${recipe.ratingDistribution['3']} ratings
+          • 2 stars: ${recipe.ratingDistribution['2']} ratings
+          • 1 star: ${recipe.ratingDistribution['1']} ratings`;
+                }
+            }
+            // Combine everything
+            return `# ${recipe.title} 
+      
+  **Category:** ${recipe.category}  |  **Difficulty:** ${recipe.difficulty}  |  **Time:** ${recipe.cookingTime} mins  |  **Servings:** ${recipe.servings}
+      
+  ${recipe.description}
+  
+  **Ingredients:**
+  ${ingredientsList}
+  
+  **Instructions:**
+  ${stepsList}
+  
+  **Nutrition Information:**
+  ${nutrition}
+  ${tips}
+  ${ratingInfo}
+  
+  *Created by ${((_a = recipe.userDetails) === null || _a === void 0 ? void 0 : _a.name) || ((_b = recipe.adminDetails) === null || _b === void 0 ? void 0 : _b.name) || 'Unknown'}*
+  `;
+        }
+        catch (error) {
+            console.error('Error fetching recipe details:', error);
+            return "Sorry, I couldn't fetch the recipe details right now.";
         }
     }
     static async getRecentRecipes(userId) {
@@ -80,19 +336,38 @@ class MessageHandler {
             return "Sorry, I couldn't fetch your recent recipes right now.";
         }
     }
+    static formatRecipeList(recipes) {
+        if (recipes.length === 0) {
+            return "No recipes found!";
+        }
+        const recipeList = recipes.map((recipe, index) => {
+            var _a, _b;
+            // Basic info
+            const title = recipe.title;
+            const category = recipe.category ? `🍲 ${recipe.category.charAt(0).toUpperCase() + recipe.category.slice(1)}` : '';
+            const time = recipe.cookingTime ? `⏱️ ${recipe.cookingTime} mins` : '';
+            const difficulty = recipe.difficulty ? `📊 ${recipe.difficulty.charAt(0).toUpperCase() + recipe.difficulty.slice(1)}` : '';
+            // Ratings
+            const rating = recipe.averageRating
+                ? `⭐ ${recipe.averageRating.toFixed(1)}/5.0 (${recipe.totalReviews} ${recipe.totalReviews === 1 ? 'review' : 'reviews'})`
+                : '';
+            // Creator info
+            const creator = ((_a = recipe.userDetails) === null || _a === void 0 ? void 0 : _a.name) || ((_b = recipe.adminDetails) === null || _b === void 0 ? void 0 : _b.name) || 'Unknown';
+            // Description preview (truncated)
+            const descriptionPreview = recipe.description
+                ? `${recipe.description.substring(0, 60)}${recipe.description.length > 60 ? '...' : ''}`
+                : '';
+            // Put it all together
+            return `${index + 1}. **${title}**\n   ${category} | ${time} | ${difficulty}\n   ${rating}\n   By: ${creator}\n   ${descriptionPreview}`;
+        }).join('\n\n');
+        return recipeList;
+    }
     static async getRecipeStats(userId) {
         try {
             const totalRecipes = await recipe_1.default.countDocuments({ user: userId });
             if (totalRecipes === 0) {
                 return "You haven't created any recipes yet! Time to start your culinary journey! 🚀";
             }
-            // Get cuisine breakdown
-            const cuisineStats = await recipe_1.default.aggregate([
-                { $match: { user: userId } },
-                { $group: { _id: "$cuisine", count: { $sum: 1 } } },
-                { $sort: { count: -1 } },
-                { $limit: 5 }
-            ]);
             // Get difficulty breakdown
             const difficultyStats = await recipe_1.default.aggregate([
                 { $match: { user: userId } },
@@ -101,13 +376,6 @@ class MessageHandler {
             ]);
             let statsText = `📊 **Your Recipe Statistics:**\n\n`;
             statsText += `📚 Total Recipes: **${totalRecipes}**\n\n`;
-            if (cuisineStats.length > 0) {
-                statsText += `🌍 **Top Cuisines:**\n`;
-                cuisineStats.forEach((stat, index) => {
-                    statsText += `${index + 1}. ${stat._id || 'General'}: ${stat.count} recipes\n`;
-                });
-                statsText += '\n';
-            }
             if (difficultyStats.length > 0) {
                 statsText += `⭐ **Difficulty Levels:**\n`;
                 difficultyStats.forEach((stat) => {
@@ -156,15 +424,116 @@ class MessageHandler {
             return "Sorry, I had trouble searching your recipes. Please try again.";
         }
     }
+    static async addToFavorites(userId, recipeId) {
+        try {
+            // First check if recipe exists
+            const recipe = await recipe_1.default.findById(recipeId);
+            if (!recipe) {
+                return "Sorry, I couldn't find that recipe.";
+            }
+            // Check if it's already a favorite using the Favorite model
+            const existingFavorite = await favoriteRecipe_1.default.findOne({
+                user: userId,
+                recipe: recipeId
+            });
+            if (existingFavorite) {
+                return `"${recipe.title}" is already in your favorites!`;
+            }
+            // Create a new favorite entry
+            await favoriteRecipe_1.default.create({
+                user: userId,
+                recipe: recipeId
+            });
+            return `✅ Added "${recipe.title}" to your favorites!`;
+        }
+        catch (error) {
+            console.error('Error adding to favorites:', error);
+            // Check if it's a duplicate error (user tried to favorite same recipe twice)
+            if (error.code === 11000) {
+                return "This recipe is already in your favorites!";
+            }
+            return "Sorry, I couldn't add this recipe to your favorites right now.";
+        }
+    }
+    static async removeFromFavorites(userId, recipeId) {
+        try {
+            // First check if recipe exists
+            const recipe = await recipe_1.default.findById(recipeId);
+            if (!recipe) {
+                return "Sorry, I couldn't find that recipe.";
+            }
+            // Check if it's actually a favorite
+            const existingFavorite = await favoriteRecipe_1.default.findOne({
+                user: userId,
+                recipe: recipeId
+            });
+            if (!existingFavorite) {
+                return `"${recipe.title}" isn't in your favorites.`;
+            }
+            // Remove the favorite entry
+            await favoriteRecipe_1.default.deleteOne({
+                user: userId,
+                recipe: recipeId
+            });
+            return `✅ Removed "${recipe.title}" from your favorites.`;
+        }
+        catch (error) {
+            console.error('Error removing from favorites:', error);
+            return "Sorry, I couldn't remove this recipe from your favorites right now.";
+        }
+    }
     static async handleFavoriteQueries(action, userId, message) {
         try {
-            // Note: Adjust this based on how you handle favorites in your schema
-            // This assumes you have a favorites collection or a field in recipes
-            const favorites = await recipe_1.default.find({
-                user: userId,
-                // Add your favorite logic here - might be a separate Favorite model
-                // or a boolean field like isFavorite: true
-            }).limit(10);
+            // Add to favorites intent
+            if (action === 'add' ||
+                message.toLowerCase().includes('add to favorites') ||
+                message.toLowerCase().includes('favorite this') ||
+                message.toLowerCase().includes('save this')) {
+                // Check if there's a recipe number mentioned
+                const recipeMatch = message.match(/recipe\s+(\d+)|recipe\s+number\s+(\d+)|#(\d+)/i);
+                if (recipeMatch) {
+                    const recipeNumber = parseInt(recipeMatch[1] || recipeMatch[2] || recipeMatch[3]);
+                    // Get recipe ID from number
+                    const recipes = await recipe_1.default.find({ user: userId })
+                        .sort({ createdAt: -1 })
+                        .limit(15);
+                    if (recipeNumber > 0 && recipeNumber <= recipes.length) {
+                        return await this.addToFavorites(userId, recipes[recipeNumber - 1]._id);
+                    }
+                }
+                return "Which recipe would you like to add to favorites? Please specify by number or name.";
+            }
+            // Remove from favorites intent
+            if (action === 'remove' ||
+                message.toLowerCase().includes('remove from favorites') ||
+                message.toLowerCase().includes('unfavorite') ||
+                message.toLowerCase().includes('delete favorite')) {
+                const recipeMatch = message.match(/recipe\s+(\d+)|recipe\s+number\s+(\d+)|#(\d+)/i);
+                if (recipeMatch) {
+                    const recipeNumber = parseInt(recipeMatch[1] || recipeMatch[2] || recipeMatch[3]);
+                    // First get all favorites
+                    const favorites = await this.getUserFavorites(userId);
+                    if (recipeNumber > 0 && recipeNumber <= favorites.length) {
+                        return await this.removeFromFavorites(userId, favorites[recipeNumber - 1]._id);
+                    }
+                }
+                return "Which recipe would you like to remove from favorites? Please specify by number.";
+            }
+            // Get all favorites (default action)
+            return await this.getAllFavorites(userId);
+        }
+        catch (error) {
+            console.error('Error handling favorite query:', error);
+            return "Sorry, I couldn't process your favorites request right now.";
+        }
+    }
+    static async getAllFavorites(userId) {
+        try {
+            // Get favorites with populated recipe data
+            const favorites = await favoriteRecipe_1.default.find({ user: userId })
+                .populate('recipe')
+                .sort({ createdAt: -1 })
+                .limit(10);
             return this.formatFavoritesResponse(favorites);
         }
         catch (error) {
@@ -172,12 +541,31 @@ class MessageHandler {
             return "Sorry, I couldn't fetch your favorite recipes right now.";
         }
     }
+    static async getUserFavorites(userId) {
+        try {
+            const favorites = await favoriteRecipe_1.default.find({ user: userId })
+                .populate('recipe')
+                .sort({ createdAt: -1 });
+            return favorites;
+        }
+        catch (error) {
+            console.error('Error fetching user favorites:', error);
+            return [];
+        }
+    }
     static formatFavoritesResponse(favorites) {
         if (favorites.length === 0) {
             return "You haven't marked any recipes as favorites yet! ⭐\n\nWhen you find recipes you love, make sure to favorite them so I can suggest them again! 💖";
         }
-        const favoriteList = favorites.map((recipe, index) => `${index + 1}. **${recipe.title}** ⭐ (${recipe.cuisine || 'General'})`).join('\n');
-        return `Your favorite recipes:\n\n${favoriteList}\n\nWhich favorite would you like to cook today? 🍽️`;
+        const favoriteList = favorites.map((favorite, index) => {
+            const recipe = favorite.recipe;
+            const rating = recipe.averageRating
+                ? `⭐ ${recipe.averageRating.toFixed(1)}/5.0`
+                : '';
+            const addedOn = this.formatTimeAgo(favorite.createdAt);
+            return `${index + 1}. **${recipe.title}** ${rating}\n   Added to favorites: ${addedOn}`;
+        }).join('\n\n');
+        return `Your favorite recipes:\n\n${favoriteList}\n\nWhich favorite would you like to cook today? 🍽️\nYou can say "show me favorite #1" or "remove favorite #2"`;
     }
     static formatTimeAgo(date) {
         const now = new Date();
@@ -197,5 +585,611 @@ class MessageHandler {
     static async handleSmartRequest(intent, userContext, message) {
         return `I can help you ${intent.action} a ${intent.entity}! I'll need some information first. (Smart request handling coming next...)`;
     }
+    static async generateRecipe(userId, recipeName) {
+        try {
+            // Use AI to generate recipe
+            const prompt = `
+        Generate a detailed recipe for ${recipeName}. Include:
+        - A brief description (2-3 sentences)
+        - List of ingredients with quantities
+        - Step-by-step cooking instructions
+        - Approximate cooking time
+        - Difficulty level
+        - Number of servings
+        - Nutrition information (calories, protein, carbs, fat)
+        - 2-3 cooking tips
+        
+        Format the response in structured data that can be parsed.
+      `;
+            // Get recipe from AI
+            const aiRecipe = await this.getAIGeneratedRecipe(prompt);
+            // Format a preview for the user
+            const preview = `
+# ${aiRecipe.title || recipeName}
+
+**Description:**
+${aiRecipe.description}
+
+**Estimated Cooking Time:** ${aiRecipe.cookingTime} minutes
+**Difficulty:** ${aiRecipe.difficulty}
+**Servings:** ${aiRecipe.servings}
+
+**Ingredients Preview:**
+${aiRecipe.ingredients.slice(0, 3).map((ing) => `• ${ing}`).join('\n')}
+${aiRecipe.ingredients.length > 3 ? `• ...and ${aiRecipe.ingredients.length - 3} more ingredients` : ''}
+
+**Instructions Preview:**
+${aiRecipe.steps.slice(0, 2).map((step, i) => `${i + 1}. ${step}`).join('\n')}
+${aiRecipe.steps.length > 2 ? `...and ${aiRecipe.steps.length - 2} more steps` : ''}
+
+Would you like me to:
+1. Save this recipe to your collection
+2. Modify any part of the recipe
+3. Generate a completely different recipe
+`;
+            // Store the generated recipe in temporary session storage
+            // (this would need to be implemented separately)
+            return preview;
+        }
+        catch (error) {
+            console.error('Error generating recipe:', error);
+            return "Sorry, I had trouble creating a recipe. Please try again or provide more details.";
+        }
+    }
+    static async getAIGeneratedRecipe(prompt) {
+        var _a;
+        try {
+            // Use the AI model to generate the recipe
+            const result = await AiBasedIntentDetector_1.AIIntentDetector.generateStructuredContent(prompt, {
+                title: "The recipe title",
+                description: "A short description of the dish",
+                ingredients: "Array of ingredient strings with quantities",
+                steps: "Array of cooking instruction steps",
+                cookingTime: "Total time in minutes",
+                difficulty: "Easy, Medium, or Hard",
+                servings: "Number of servings",
+                nutrition: {
+                    calories: "Total calories per serving",
+                    protein: "Protein in grams",
+                    carbs: "Carbs in grams",
+                    fat: "Fat in grams"
+                },
+                tips: "Array of cooking tips"
+            });
+            return result;
+        }
+        catch (error) {
+            console.error('Error in AI recipe generation:', error);
+            // Fallback with basic structure
+            return {
+                title: ((_a = prompt.split('for ')[1]) === null || _a === void 0 ? void 0 : _a.split('.')[0]) || "New Recipe",
+                description: "A delicious homemade dish.",
+                ingredients: ["Ingredient 1", "Ingredient 2", "Ingredient 3"],
+                steps: ["Prepare ingredients", "Cook according to instructions", "Serve and enjoy"],
+                cookingTime: 30,
+                difficulty: "Medium",
+                servings: 4,
+                nutrition: {
+                    calories: 300,
+                    protein: 15,
+                    carbs: 40,
+                    fat: 10
+                },
+                tips: ["For best results, follow all steps carefully"]
+            };
+        }
+    }
+    // New method to handle user profile queries
+    static async handleUserProfileQuery(userId, message, profileField) {
+        try {
+            // Get user details
+            const user = await user_1.default.findById(userId);
+            if (!user) {
+                return "I'm having trouble finding your account information.";
+            }
+            // If a specific field was requested
+            if (profileField) {
+                switch (profileField.toLowerCase()) {
+                    case 'name':
+                    case 'username':
+                        return `Your username is ${user.username}.`;
+                    case 'email':
+                        return `Your email address is ${user.email}.`;
+                    case 'bio':
+                        return user.bio
+                            ? `Your bio: "${user.bio}"`
+                            : "You haven't added a bio to your profile yet. Would you like to add one?";
+                    case 'location':
+                        return user.location
+                            ? `Your location is set to ${user.location}.`
+                            : "You haven't added your location to your profile yet.";
+                    case 'website':
+                        return user.website
+                            ? `Your website is ${user.website}.`
+                            : "You haven't added a website to your profile yet.";
+                    case 'phone':
+                    case 'phone number':
+                        return user.phoneNumber
+                            ? `Your phone number is ${user.phoneNumber}.`
+                            : "You haven't added a phone number to your profile yet.";
+                    default:
+                        // General profile information
+                        return this.formatUserProfile(user);
+                }
+            }
+            else {
+                // If no specific field, show general profile info
+                return this.formatUserProfile(user);
+            }
+        }
+        catch (error) {
+            console.error('Error fetching user profile:', error);
+            return "Sorry, I couldn't access your profile information right now.";
+        }
+    }
+    // Format user profile information
+    static formatUserProfile(user) {
+        let profileInfo = `**Your Profile Information**\n\n`;
+        profileInfo += `Username: ${user.username}\n`;
+        profileInfo += `Email: ${user.email}\n`;
+        if (user.bio)
+            profileInfo += `Bio: ${user.bio}\n`;
+        if (user.location)
+            profileInfo += `Location: ${user.location}\n`;
+        if (user.website)
+            profileInfo += `Website: ${user.website}\n`;
+        if (user.phoneNumber)
+            profileInfo += `Phone: ${user.phoneNumber}\n`;
+        profileInfo += `\nAccount created: ${this.formatTimeAgo(user.createdAt)}`;
+        return profileInfo;
+    }
+    // Create personalized greeting
+    static async createPersonalizedGreeting(userId, includeUserName) {
+        try {
+            if (includeUserName) {
+                const user = await user_1.default.findById(userId);
+                if (user) {
+                    const timeOfDay = this.getTimeOfDay();
+                    return `${timeOfDay}, ${user.username}! How can I help with your recipes today?`;
+                }
+            }
+            // Default greeting if we can't get the username
+            return "Hello! How can I help with your recipes today?";
+        }
+        catch (error) {
+            console.error('Error creating personalized greeting:', error);
+            return "Hello! How can I help you today?";
+        }
+    }
+    // Helper method to get time of day greeting
+    static getTimeOfDay() {
+        const hour = new Date().getHours();
+        if (hour < 12)
+            return "Good morning";
+        if (hour < 18)
+            return "Good afternoon";
+        return "Good evening";
+    }
+    static async createAIGeneratedMealSlot(mealType, dietaryPreferences) {
+        var _a, _b, _c, _d;
+        // Get AI to generate recipe suggestions for this meal slot
+        const prompt = `Generate a ${dietaryPreferences.join(' ')} ${mealType} recipe idea.`;
+        try {
+            const aiRecipe = await this.getAIGeneratedRecipe(prompt);
+            // Create a new recipe in the database
+            const newRecipe = new recipe_1.default({
+                title: aiRecipe.title,
+                description: aiRecipe.description,
+                ingredients: aiRecipe.ingredients.map((ing) => {
+                    const parts = ing.split(' ');
+                    return {
+                        quantity: parts[0] || "1",
+                        unit: parts[1] || "unit",
+                        name: parts.slice(2).join(' ') || ing
+                    };
+                }),
+                steps: aiRecipe.steps,
+                cookingTime: aiRecipe.cookingTime,
+                difficulty: aiRecipe.difficulty,
+                servings: aiRecipe.servings,
+                nutrition: aiRecipe.nutrition || {},
+                tips: aiRecipe.tips || [],
+                isAIGenerated: true,
+                isPublished: false
+            });
+            const savedRecipe = await newRecipe.save();
+            // Return in format expected by meal plan schema
+            return {
+                mealType: mealType,
+                recipe: savedRecipe._id,
+                recipeDetails: {
+                    title: savedRecipe.title,
+                    featuredImage: savedRecipe.featuredImage || "",
+                    category: savedRecipe.category || mealType,
+                    cookingTime: savedRecipe.cookingTime || 30,
+                    difficulty: savedRecipe.difficulty || "Medium",
+                    servings: savedRecipe.servings || 2,
+                    steps: savedRecipe.steps || [],
+                    tips: savedRecipe.tips || [],
+                    nutrition: {
+                        calories: ((_a = savedRecipe.nutrition) === null || _a === void 0 ? void 0 : _a.calories) || 0,
+                        protein: ((_b = savedRecipe.nutrition) === null || _b === void 0 ? void 0 : _b.protein) || 0,
+                        carbs: ((_c = savedRecipe.nutrition) === null || _c === void 0 ? void 0 : _c.carbs) || 0,
+                        fat: ((_d = savedRecipe.nutrition) === null || _d === void 0 ? void 0 : _d.fat) || 0
+                    }
+                }
+            };
+        }
+        catch (error) {
+            console.error('Error generating AI recipe for meal plan:', error);
+            // Fallback to a placeholder meal
+            return {
+                mealType: mealType,
+                recipeDetails: {
+                    title: `${mealType.charAt(0).toUpperCase() + mealType.slice(1)} Meal`,
+                    category: mealType,
+                    cookingTime: 30,
+                    difficulty: "Medium",
+                    servings: 2,
+                    steps: ["Prepare ingredients", "Cook according to recipe"],
+                    tips: ["Plan ahead for best results"],
+                    nutrition: {
+                        calories: 0,
+                        protein: 0,
+                        carbs: 0,
+                        fat: 0
+                    }
+                }
+            };
+        }
+    }
+    static async handleViewMealPlan(userId, message) {
+        try {
+            // Find user's meal plans
+            const mealPlans = await meal_planner_1.default.find({ user: userId })
+                .sort({ week: -1 })
+                .limit(5);
+            if (mealPlans.length === 0) {
+                return "You don't have any meal plans yet. Would you like me to create one for you?";
+            }
+            // Format the list of meal plans
+            const planList = mealPlans.map((plan, index) => {
+                const weekStart = new Date(plan.week);
+                const formattedDate = weekStart.toISOString().split('T')[0]; // YYYY-MM-DD format
+                const url = `/dashboard/meal-plan/${formattedDate}`;
+                return `${index + 1}. **${plan.name}** - [View Plan](${url})`;
+            }).join('\n');
+            return `Here are your most recent meal plans:\n\n${planList}\n\nWould you like me to create a new meal plan for you?`;
+        }
+        catch (error) {
+            console.error('Error fetching meal plans:', error);
+            return "Sorry, I couldn't fetch your meal plans right now. Please try again later.";
+        }
+    }
+    // private static async generateMealPlan(userId: string, targetWeek: Date, dietaryPreferences: string[]): Promise<any> {
+    //   // Get user's recipes
+    //   const userRecipes = await RecipeModel.find({ user: userId })
+    //     .sort({ createdAt: -1 })
+    //     .limit(100);
+    //   // Get public recipes as additional options
+    //   const publicRecipes = await RecipeModel.find({ 
+    //     isPublished: true,
+    //     ...(dietaryPreferences.length > 0 && {
+    //       $or: dietaryPreferences.map(pref => ({
+    //         tags: { $regex: pref, $options: 'i' }
+    //       }))
+    //     })
+    //   }).limit(100);
+    //   // Combine recipes but prioritize user's own
+    //   const availableRecipes = [...userRecipes, ...publicRecipes];
+    //   // Check if we have enough recipes
+    //   if (availableRecipes.length < 5) {
+    //     throw new Error("Not enough recipes available to create a balanced meal plan");
+    //   }
+    //   // This will be our plan structure following the schema
+    //   const plan = {
+    //     monday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     tuesday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     wednesday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     thursday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     friday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     saturday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     },
+    //     sunday: {
+    //       breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+    //       lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+    //       dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+    //     }
+    //   };
+    //   return plan;
+    // }
+    static async generateMealPlan(userId, targetWeek, dietaryPreferences) {
+        // Get user's recipes
+        const userRecipes = await recipe_1.default.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(100);
+        // Get public recipes as additional options
+        const publicRecipes = await recipe_1.default.find({
+            isPublished: true,
+            ...(dietaryPreferences.length > 0 && {
+                $or: dietaryPreferences.map(pref => ({
+                    tags: { $regex: pref, $options: 'i' }
+                }))
+            })
+        }).limit(100);
+        // Combine recipes but prioritize user's own
+        const availableRecipes = [...userRecipes, ...publicRecipes];
+        // Check if we have enough recipes
+        if (availableRecipes.length < 5) {
+            throw new Error("Not enough recipes available to create a balanced meal plan");
+        }
+        // This will be our plan structure following the schema
+        const plan = {
+            monday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            tuesday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            wednesday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            thursday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            friday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            saturday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            },
+            sunday: {
+                breakfast: await this.assignMealToSlot('breakfast', availableRecipes, dietaryPreferences),
+                lunch: await this.assignMealToSlot('lunch', availableRecipes, dietaryPreferences),
+                dinner: await this.assignMealToSlot('dinner', availableRecipes, dietaryPreferences)
+            }
+        };
+        return plan;
+    }
+    static async assignMealToSlot(mealType, availableRecipes, dietaryPreferences) {
+        var _a, _b, _c, _d;
+        // Create a pool of recipes appropriate for this meal type
+        let recipePool = [...availableRecipes]; // Clone the array
+        // Try to find recipes suitable for this meal type first
+        if (mealType === 'breakfast') {
+            // Filter for breakfast-appropriate recipes
+            const breakfastRecipes = recipePool.filter(r => {
+                var _a, _b;
+                return ((_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes('breakfast')) ||
+                    ((_b = r.category) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'breakfast' ||
+                    ['egg', 'toast', 'oatmeal', 'cereal', 'pancake', 'muffin', 'yogurt'].some(term => { var _a; return (_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(term); });
+            });
+            // If we have breakfast recipes, prioritize them
+            if (breakfastRecipes.length > 0) {
+                recipePool = breakfastRecipes;
+            }
+        }
+        else if (mealType === 'lunch') {
+            // Filter for lunch-appropriate recipes
+            const lunchRecipes = recipePool.filter(r => {
+                var _a, _b;
+                return ((_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes('lunch')) ||
+                    ((_b = r.category) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'lunch' ||
+                    ['salad', 'sandwich', 'soup', 'wrap', 'bowl'].some(term => { var _a; return (_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(term); });
+            });
+            // If we have lunch recipes, prioritize them
+            if (lunchRecipes.length > 0) {
+                recipePool = lunchRecipes;
+            }
+        }
+        else if (mealType === 'dinner') {
+            // Filter for dinner-appropriate recipes
+            const dinnerRecipes = recipePool.filter(r => {
+                var _a, _b;
+                return ((_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes('dinner')) ||
+                    ((_b = r.category) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === 'dinner' ||
+                    ['pasta', 'chicken', 'beef', 'fish', 'steak', 'curry', 'roast'].some(term => { var _a; return (_a = r.title) === null || _a === void 0 ? void 0 : _a.toLowerCase().includes(term); });
+            });
+            // If we have dinner recipes, prioritize them
+            if (dinnerRecipes.length > 0) {
+                recipePool = dinnerRecipes;
+            }
+        }
+        // Apply dietary preferences if any
+        if (dietaryPreferences.length > 0) {
+            const filteredForDiet = recipePool.filter(r => dietaryPreferences.some(pref => {
+                var _a, _b, _c;
+                return ((_a = r.tags) === null || _a === void 0 ? void 0 : _a.includes(pref)) ||
+                    ((_b = r.title) === null || _b === void 0 ? void 0 : _b.toLowerCase().includes(pref)) ||
+                    ((_c = r.description) === null || _c === void 0 ? void 0 : _c.toLowerCase().includes(pref));
+            }));
+            // Only use diet-filtered recipes if we found any
+            if (filteredForDiet.length > 0) {
+                recipePool = filteredForDiet;
+            }
+        }
+        // If we still have more than one recipe, pick one randomly
+        let selectedRecipe;
+        if (recipePool.length > 0) {
+            selectedRecipe = recipePool[Math.floor(Math.random() * recipePool.length)];
+        }
+        else {
+            // If no suitable recipes, take any random recipe
+            selectedRecipe = availableRecipes[Math.floor(Math.random() * availableRecipes.length)];
+        }
+        // Return in the format expected by the schema
+        return {
+            mealType: mealType,
+            recipe: selectedRecipe._id,
+            recipeDetails: {
+                title: selectedRecipe.title,
+                featuredImage: selectedRecipe.featuredImage || "",
+                category: selectedRecipe.category || "",
+                cookingTime: selectedRecipe.cookingTime || 30,
+                difficulty: selectedRecipe.difficulty || "Medium",
+                servings: selectedRecipe.servings || 2,
+                steps: selectedRecipe.steps || [],
+                tips: selectedRecipe.tips || [],
+                nutrition: {
+                    calories: ((_a = selectedRecipe.nutrition) === null || _a === void 0 ? void 0 : _a.calories) || 0,
+                    protein: ((_b = selectedRecipe.nutrition) === null || _b === void 0 ? void 0 : _b.protein) || 0,
+                    carbs: ((_c = selectedRecipe.nutrition) === null || _c === void 0 ? void 0 : _c.carbs) || 0,
+                    fat: ((_d = selectedRecipe.nutrition) === null || _d === void 0 ? void 0 : _d.fat) || 0
+                }
+            }
+        };
+    }
+    static async handleMealPlanCreation(userId, aiIntent, message) {
+        try {
+            // Get target week from intent or default to current week
+            let targetWeek = new Date();
+            if (aiIntent.targetWeek) {
+                targetWeek = new Date(aiIntent.targetWeek);
+            }
+            else {
+                // Default to next week's Monday if no date specified
+                targetWeek.setDate(targetWeek.getDate() + (8 - targetWeek.getDay()) % 7);
+            }
+            // Get dietary preferences
+            const dietaryPreferences = aiIntent.dietaryPreferences || [];
+            // Check if user has enough recipes
+            const recipeCount = await recipe_1.default.countDocuments({ user: userId });
+            const publicRecipeCount = await recipe_1.default.countDocuments({ isPublished: true });
+            if (recipeCount + publicRecipeCount < 5) {
+                return "You need more recipes to create a meal plan. You currently have " +
+                    recipeCount + " recipes. Please add more recipes first or browse the public recipes.";
+            }
+            // Create a name for the meal plan
+            const planName = aiIntent.mealPlanName || `Meal Plan for ${targetWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            // Generate the meal plan
+            const mealPlanData = await this.generateMealPlan(userId, targetWeek, dietaryPreferences);
+            // Create meal plan in database
+            const newMealPlan = new meal_planner_1.default({
+                name: planName,
+                week: targetWeek,
+                plan: mealPlanData,
+                user: userId,
+                isActive: true,
+                notes: `Created via chatbot on ${new Date().toLocaleDateString()}`
+            });
+            await newMealPlan.save();
+            // Format the URL for the meal plan
+            const formattedDate = targetWeek.toISOString().split('T')[0]; // YYYY-MM-DD format
+            const mealPlanUrl = `/dashboard/meal-plan/${formattedDate}`;
+            // Return success message with link
+            return `✅ I've created your meal plan "${planName}"!\n\n` +
+                `This plan includes ${dietaryPreferences.length > 0 ? dietaryPreferences.join(', ') + ' ' : ''}meals for the week of ${targetWeek.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.\n\n` +
+                `You can view and customize your meal plan here:\n[View Your Meal Plan](${mealPlanUrl})\n\n` +
+                `Would you like me to explain what's on the menu?`;
+        }
+        catch (error) {
+            console.error('Error creating meal plan:', error);
+            if (error.message === "Not enough recipes available to create a balanced meal plan") {
+                return "You don't have enough recipes to create a diverse meal plan. Try adding more recipes to your collection first, or browse the public recipes section.";
+            }
+            return "Sorry, I couldn't create your meal plan right now. Please try again later.";
+        }
+    }
 }
 exports.MessageHandler = MessageHandler;
+class NLUHelper {
+    // Checks input against all patterns in a category
+    static matchesIntent(input, intentCategory) {
+        const patterns = this.intentPatterns[intentCategory];
+        if (!patterns)
+            return false;
+        input = input.toLowerCase();
+        return patterns.some((pattern) => input.includes(pattern));
+    }
+    // Determines user ownership intent
+    static isUserSpecific(input) {
+        const userPatterns = ['my', 'mine', 'i made', 'i created', 'i have',
+            'i\'ve made', 'i cooked', 'i saved', 'i wrote'];
+        input = input.toLowerCase();
+        return userPatterns.some(pattern => input.includes(pattern));
+    }
+    // Calculates confidence score for intent matching
+    static getIntentWithConfidence(input) {
+        input = input.toLowerCase();
+        let bestMatch = { intent: 'unknown', confidence: 0 };
+        // Check each intent category with proper type handling
+        for (const [intent, patterns] of Object.entries(this.intentPatterns)) {
+            // Count how many patterns match
+            const matches = patterns.filter((pattern) => input.includes(pattern));
+            const confidence = matches.length > 0 ? matches.length / patterns.length : 0;
+            // If this intent has higher confidence, it becomes our best match
+            if (confidence > bestMatch.confidence) {
+                bestMatch = { intent, confidence };
+            }
+        }
+        // Add user-specific modifier if applicable
+        if (this.isUserSpecific(input) && !['showUserRecipes', 'recentRecipes'].includes(bestMatch.intent)) {
+            bestMatch.intent = 'user_' + bestMatch.intent;
+        }
+        return bestMatch;
+    }
+}
+exports.NLUHelper = NLUHelper;
+// Intent categories with proper type definition
+NLUHelper.intentPatterns = {
+    showUserRecipes: [
+        'my recipes', 'show my recipes', 'list my recipes', 'what recipes do i have',
+        'display my recipes', 'see my recipes', 'view my recipes', 'all my recipes',
+        'what are my recipes', 'recipes i have', 'recipes i\'ve made'
+    ],
+    recentRecipes: [
+        'recent', 'latest', 'new', 'newest', 'just made', 'recently added',
+        'recently created', 'last added', 'last created', 'what i made recently'
+    ],
+    recipeStats: [
+        'stats', 'statistics', 'summary', 'overview', 'metrics', 'analytics',
+        'numbers', 'count', 'totals', 'breakdown', 'how many recipes'
+    ],
+    searchRecipes: [
+        'search', 'find', 'look for', 'search for', 'where is', 'do i have',
+        'locate', 'seeking', 'hunting for', 'trying to find'
+    ],
+    publicRecipes: [
+        'public', 'popular', 'trending', 'featured', 'community', 'others',
+        'everyone', 'published', 'shared', 'global', 'top rated'
+    ],
+    cooking: [
+        'how to make', 'how to cook', 'how to prepare', 'instructions for',
+        'steps to make', 'recipe for making', 'directions for', 'guide to making'
+    ]
+};

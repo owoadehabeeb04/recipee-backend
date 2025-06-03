@@ -12,6 +12,7 @@ const prompts_1 = require("@langchain/core/prompts");
 const mongoose_1 = __importDefault(require("mongoose"));
 const recipe_1 = __importDefault(require("../../models/recipe"));
 const helpers_1 = require("./helpers");
+const AiBasedIntentDetector_1 = require("./AiBasedIntentDetector");
 const initChatbot = () => {
     const TheAiModel = new google_genai_1.ChatGoogleGenerativeAI({
         apiKey: process.env.GOOGLE_API_KEY || "",
@@ -453,6 +454,7 @@ const initChatbot = () => {
         new prompts_1.MessagesPlaceholder("history"),
         ["human", "{input}"]
     ]);
+    AiBasedIntentDetector_1.AIIntentDetector.initialize(TheAiModel);
     const chain = runnables_1.RunnableSequence.from([
         {
             input: (input) => input.input,
