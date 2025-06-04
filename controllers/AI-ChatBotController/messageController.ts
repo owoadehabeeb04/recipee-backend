@@ -78,13 +78,13 @@ export const sendMessage = async (req: any, res: any) => {
       
       // Route based on intent
       switch (intentResult.mode) {
-        case 'database':
-          aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
-          break;
+        // case 'database':
+        //   aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
+        //   break;
           
-        case 'smart_request':
-          aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
-          break;
+        // case 'smart_request':
+        //   aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
+        //   break;
           
         case 'general_cooking':
         default:
