@@ -1965,3 +1965,90 @@
 [2025-06-04T14:22:29.193Z] Found 19 total matching users
 [2025-06-04T14:22:30.255Z] USERS [{"_id":"6812685715898cc48419b59a","email":"qudusowoade@gmail.com","username":"Tobiloba","role":"user","createdAt":"2025-04-30T18:13:43.799Z","updatedAt":"2025-04-30T18:13:43.799Z","__v":0},{"socialMediaLink":{"name":"Linkedln","link":"https://www.linkedin.com/in/owoade-habeeb-temitope-a747601b0/"},"_id":"67ff6dcb0ade089ce49aa688","email":"owoadehabeeb1@gmail.com","username":"Habeeb Chef","role":"user","createdAt":"2025-04-16T08:43:55.446Z","updatedAt":"2025-05-26T08:37:33.602Z","__v":0,"bio":"A Software engineer fueled by\nthe joy of building innovative products that shape the world","location":"Lagos, NGA","phoneNumber":"09136497992","website":"https://habeeb-dev-portfolio.vercel.app/"},{"_id":"67d193b73a41b0f8ecad19c3","email":"testingok@gmail.com","username":"aga@na.c","role":"user","__v":0,"updatedAt":"2025-04-11T11:39:54.570Z","createdAt":"2025-04-11T11:39:54.570Z"},{"_id":"67d189033a41b0f8ecad19c0","email":"owoadehabeeb103@gmail.com","username":"owoadeAdminn","role":"admin","__v":0,"updatedAt":"2025-04-11T11:39:54.427Z","createdAt":"2025-04-11T11:39:54.427Z"},{"socialMediaLink":{"name":"linkedln","link":"https://habeeb-dev-portfolio.vercel.app"},"_id":"67d188473a41b0f8ecad19ba","email":"owoadehabeeb1003@gmail.com","username":"owoadeAdmin","role":"admin","__v":0,"phoneNumber":"09136497992","updatedAt":"2025-04-20T19:37:18.822Z","profileImage":"https://res.cloudinary.com/dvzs0ptr7/image/upload/v1742908521/Link-sharing-app/uloblpzwgnawswk5xhuk.png","bio":"my name is habeeb i love coding currently learning backend engineering  i love it man","location":"Lagos, NGA","website":"https://habeeb-dev-portfolio.vercel.app/","createdAt":"2025-04-11T11:39:54.286Z"},{"socialMediaLink":{"name":"facebook","link":"http://localhost:3000/dashboard/profile"},"_id":"67d17ad53f7033c7f715cfe3","email":"habeebowoade8@gmail.com","username":"superadmin","role":"super_admin","__v":0,"updatedAt":"2025-06-04T10:17:40.935Z","createdAt":"2025-04-11T11:39:54.138Z","bio":"i am a super adminnn!","phoneNumber":"09136497992","location":"new york ","profileImage":"https://res.cloudinary.com/dvzs0ptr7/image/upload/v1744578094/Link-sharing-app/u9xp88tx4k7irrpuqbbl.svg"},{"role":"user","_id":"67c46997de6489f5c5820618","email":"testexample314@gmail.com","username":"owoadehab","__v":0,"updatedAt":"2025-04-11T11:39:53.690Z","createdAt":"2025-04-11T11:39:53.690Z"},{"role":"user","_id":"67c46927de6489f5c5820614","email":"testexampleo14@gmail.com","username":"owoadehabeeb444444","__v":0,"updatedAt":"2025-04-11T11:39:53.538Z","createdAt":"2025-04-11T11:39:53.538Z"},{"role":"user","_id":"67c468f0de6489f5c5820611","email":"testexample14@gmail.com","username":"owoadehabeeb44444","__v":0,"updatedAt":"2025-04-11T11:39:53.378Z","createdAt":"2025-04-11T11:39:53.378Z"},{"role":"user","_id":"67c468b7de6489f5c582060b","email":"testexample100900jhh4@gmail.com","username":"owoadehabeeb4444","__v":0,"updatedAt":"2025-04-11T11:39:53.239Z","createdAt":"2025-04-11T11:39:53.239Z"}]
 [2025-06-04T14:22:30.257Z] Returning 10 users for page 1
+[2025-06-05T09:19:01.989Z] TEST LOG - CAN YOU SEE ME?
+[2025-06-05T09:19:02.193Z] 🚀 Server running on port 3001
+[2025-06-05T09:19:12.076Z] ✅ MongoDB connected successfully
+[2025-06-05T09:19:51.019Z] {"originalMessage":"Shared an image"}
+[2025-06-05T09:19:51.021Z] ENTERRR!
+[2025-06-05T09:19:51.022Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1749115190/Link-sharing-app/vgtfiulzydjgfn8s2nnu.jpg
+[2025-06-05T09:19:51.188Z] Downloading image from Cloudinary URL
+[2025-06-05T09:19:51.999Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115191996_893.jpg
+[2025-06-05T09:19:51.999Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115191996_893.jpg
+[2025-06-05T09:19:52.000Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115191996_893.jpg
+[2025-06-05T09:19:54.268Z] Image analysis results: {"tags":["Breakfast","Brunch","Omelette","Toast","Eggs","Comfort food"],"description":"A folded omelette, sprinkled with green herbs and melted cheese, served alongside two slices of whole wheat toast.","confidence":0.95,"foodRecognition":{"isDish":true,"dishName":"Herb Omelette with Toast","ingredients":["Eggs","Cheese","Fresh herbs (parsley, chives, or a mix)","Toast (whole wheat)"],"nutritionalInfo":{"calories":350,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-05T09:19:54.281Z] Before save - hasImages: true
+[2025-06-05T09:19:54.281Z] Before save - image count: 1
+[2025-06-05T09:19:54.608Z] After save - hasImages: true
+[2025-06-05T09:19:54.608Z] After save - image count: 1
+[2025-06-05T09:23:27.669Z] {"originalMessage":"Shared an image"}
+[2025-06-05T09:23:27.671Z] ENTERRR!
+[2025-06-05T09:23:27.671Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1749115407/Link-sharing-app/zfrzhsnr63uiwrxyou2y.jpg
+[2025-06-05T09:23:27.844Z] Downloading image from Cloudinary URL
+[2025-06-05T09:23:28.465Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115408463_970.jpg
+[2025-06-05T09:23:28.465Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115408463_970.jpg
+[2025-06-05T09:23:28.465Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115408463_970.jpg
+[2025-06-05T09:23:30.600Z] Image analysis results: {"tags":["Breakfast","Omelette","Eggs","Toast","Quick meal","Simple","Protein"],"description":"A simple omelette, folded and garnished with herbs, served with two slices of toast.","confidence":0.95,"foodRecognition":{"isDish":true,"dishName":"Omelette with Toast","ingredients":["Eggs","Butter or Oil","Herbs (likely parsley)","Toast (whole wheat or similar)","Cheese (possibly)"],"nutritionalInfo":{"calories":350,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-05T09:23:30.603Z] Before save - hasImages: true
+[2025-06-05T09:23:30.604Z] Before save - image count: 1
+[2025-06-05T09:23:30.927Z] After save - hasImages: true
+[2025-06-05T09:23:30.927Z] After save - image count: 1
+[2025-06-05T09:24:28.376Z] {"originalMessage":"Shared an image"}
+[2025-06-05T09:24:28.378Z] ENTERRR!
+[2025-06-05T09:24:28.378Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1749115467/Link-sharing-app/hof7lmmkvv1ma4xe8hy1.webp
+[2025-06-05T09:24:28.541Z] Downloading image from Cloudinary URL
+[2025-06-05T09:24:29.599Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115469598_280.jpg
+[2025-06-05T09:24:29.600Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115469598_280.jpg
+[2025-06-05T09:24:29.600Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749115469598_280.jpg
+[2025-06-05T09:24:32.764Z] Image analysis results: {"tags":["soccer","sports","ball","game"],"description":"The image shows a soccer game in progress. It features a player kicking a soccer ball while a referee observes the play.","confidence":0.95,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-05T09:24:32.769Z] Before save - hasImages: true
+[2025-06-05T09:24:32.769Z] Before save - image count: 1
+[2025-06-05T09:24:33.070Z] After save - hasImages: true
+[2025-06-05T09:24:33.071Z] After save - image count: 1
+[2025-06-05T09:25:27.703Z] {"originalMessage":"ana;lyze it\n"}
+[2025-06-05T09:25:28.171Z] {"originalMessage":""}
+[2025-06-05T09:25:28.341Z] {"newTitle":"Ana;lyze it"}
+[2025-06-05T09:25:28.495Z] Updated chat 684160aab139058588443806 title to: "Ana;lyze it"
+[2025-06-05T09:25:28.496Z] IntentDetector: Processing message: ana;lyze it
+
+[2025-06-05T09:25:28.496Z] IntentDetector: Lowercase message: ana;lyze it
+
+[2025-06-05T09:25:28.496Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-05T09:25:28.496Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-05T09:25:28.496Z] IntentDetector: Defaulting to general cooking
+[2025-06-05T09:25:28.496Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
+[2025-06-05T09:25:28.801Z] {"originalMessage":""}
+[2025-06-05T09:25:36.235Z] {"originalMessage":""}
+[2025-06-05T09:25:36.941Z] {"originalMessage":""}
+[2025-06-05T09:25:40.388Z] {"originalMessage":""}
+[2025-06-05T09:25:44.708Z] {"originalMessage":""}
+[2025-06-05T09:25:45.379Z] {"originalMessage":""}
+[2025-06-05T09:25:48.558Z] {"originalMessage":""}
+[2025-06-05T09:25:53.887Z] {"originalMessage":""}
+[2025-06-05T09:25:54.563Z] {"originalMessage":""}
+[2025-06-05T09:25:56.498Z] {"originalMessage":""}
+[2025-06-05T09:30:18.431Z] MongoDB disconnected
+[2025-06-05T09:33:28.481Z] {"originalMessage":""}
+[2025-06-05T09:33:29.941Z] {"originalMessage":""}
+[2025-06-05T09:33:31.259Z] {"originalMessage":""}
+[2025-06-05T09:33:31.594Z] {"originalMessage":""}
+[2025-06-05T09:33:42.313Z] {"originalMessage":"Shared an image"}
+[2025-06-05T09:33:42.314Z] ENTERRR!
+[2025-06-05T09:33:42.314Z] Received image request with URL: https://res.cloudinary.com/dvzs0ptr7/image/upload/v1749116021/Link-sharing-app/g1eukeqqg52mkcwuqmrw.webp
+[2025-06-05T09:33:42.461Z] Downloading image from Cloudinary URL
+[2025-06-05T09:33:43.699Z] Downloaded image from Cloudinary to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749116023699_219.jpg
+[2025-06-05T09:33:43.699Z] Image downloaded successfully to: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749116023699_219.jpg
+[2025-06-05T09:33:43.699Z] Analyzing image: /Users/mypc/recipeapp/serverside/uploads/chat-images/cloudinary_1749116023699_219.jpg
+[2025-06-05T09:33:46.529Z] Image analysis results: {"tags":["sports","soccer","athlete"],"description":"This image shows a soccer game in action. It's not related to food.","confidence":0.95,"foodRecognition":{"isDish":false,"dishName":"Unknown","ingredients":[],"nutritionalInfo":{"calories":0,"protein":0,"carbs":0,"fat":0}}}
+[2025-06-05T09:33:46.531Z] Before save - hasImages: true
+[2025-06-05T09:33:46.531Z] Before save - image count: 1
+[2025-06-05T09:33:46.834Z] After save - hasImages: true
+[2025-06-05T09:33:46.834Z] After save - image count: 1
+[2025-06-05T09:34:07.219Z] {"originalMessage":"can you please analyze it ?"}
+[2025-06-05T09:34:07.862Z] {"newTitle":"Analyze it"}
+[2025-06-05T09:34:08.017Z] Updated chat 6841646b0e39aa7f3035a718 title to: "Analyze it"
+[2025-06-05T09:34:08.018Z] IntentDetector: Processing message: can you please analyze it ?
+[2025-06-05T09:34:08.018Z] IntentDetector: Lowercase message: can you please analyze it ?
+[2025-06-05T09:34:08.018Z] IntentDetector: Database check - hasPersonal: false hasEntity: false
+[2025-06-05T09:34:08.018Z] IntentDetector: Smart request check - hasAction: false hasEntity: false
+[2025-06-05T09:34:08.018Z] IntentDetector: Defaulting to general cooking
+[2025-06-05T09:34:08.018Z] Detected intent: {"mode":"general_cooking","confidence":0.7}
