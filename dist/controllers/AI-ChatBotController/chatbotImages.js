@@ -8,8 +8,8 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const axios_1 = __importDefault(require("axios"));
 const aiChatMessage_1 = require("../../models/aiChatMessage");
+const imageAnalayzer_1 = require("../../services/imageAnalayzer");
 // Import the TensorFlow-based image analyzer
-const imageAnalyzer_1 = require("../../services/imageAnalyzer");
 const originalConsoleLog = console.log;
 console.log('BLESSINGGG');
 console.log = function (...args) {
@@ -102,7 +102,7 @@ const processImageMessage = async (req, res) => {
         }
         try {
             console.log(`Analyzing image: ${fullImagePath}`);
-            const imageAnalysis = await imageAnalyzer_1.TFImageAnalyzer.analyzeImage(fullImagePath);
+            const imageAnalysis = await imageAnalayzer_1.GeminiImageAnalyzer.analyzeImage(fullImagePath);
             console.log('Image analysis results:', imageAnalysis);
             // Create the image object
             const imageObject = {
@@ -215,7 +215,7 @@ const processMultiImageMessage = async (req, res) => {
                 const fullPath = path_1.default.join(process.cwd(), 'uploads/chat-images', file.filename);
                 try {
                     // Use TensorFlow analyzer for each image
-                    const imageAnalysis = await imageAnalyzer_1.TFImageAnalyzer.analyzeImage(fullPath);
+                    const imageAnalysis = await imageAnalayzer_1.GeminiImageAnalyzer.analyzeImage(fullPath);
                     const imageObject = {
                         url: imageUrl,
                         caption: '',
@@ -250,7 +250,7 @@ const processMultiImageMessage = async (req, res) => {
                     // Download the image for analysis
                     const downloadedPath = await downloadImage(url);
                     // Analyze the image
-                    const imageAnalysis = await imageAnalyzer_1.TFImageAnalyzer.analyzeImage(downloadedPath);
+                    const imageAnalysis = await imageAnalayzer_1.GeminiImageAnalyzer.analyzeImage(downloadedPath);
                     const imageObject = {
                         url: url, // Store original Cloudinary URL
                         caption: '',

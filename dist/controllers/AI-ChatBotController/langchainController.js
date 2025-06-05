@@ -94,22 +94,39 @@ const processChatMessage = async (req, res) => {
             role: msg.role,
             content: msg.content
         }));
-        // Detect if the query likely needs factual information
-        const needsFactualInfo = isFactualQuery(message);
+        // Check if query is food-related
+        const isAboutFood = isFoodRelatedQuery(message);
         let aiResponse;
         let isAugmentedWithSearch = false;
         try {
-            if (needsFactualInfo) {
-                // Use web search for factual queries
+            // Add culinary system prompt
+            const culinarySystemPrompt = `You are ChefGPT, an expert culinary AI assistant specialized in food, cooking, recipes, ingredients, nutrition, and dining experiences.
+      
+      IMPORTANT INSTRUCTIONS:
+      1. ONLY answer questions related to food, cooking, recipes, kitchen equipment, meal planning, nutrition, dining, or food culture.
+      2. If the user asks about non-food topics, politely redirect the conversation to culinary subjects.
+      3. Provide detailed, accurate cooking advice with exact measurements, temperatures, and techniques.
+      4. Consider the user's cooking skill level when appropriate.
+      5. When suggesting recipes, include full ingredient lists and step-by-step instructions.
+      
+      Remember: You must ONLY provide culinary information.`;
+            // If not food-related, provide redirection
+            if (!isAboutFood) {
+                aiResponse = generateRedirectionMessage();
+            }
+            // For food-related queries, process normally
+            else if (isFactualQuery(message)) {
+                // Use web search for factual food queries
                 isAugmentedWithSearch = true;
                 aiResponse = await generateResponseWithSearch(message, messageHistory, userId);
             }
             else {
-                // Use standard model response for non-factual queries
+                // Use standard model response with culinary focus
                 aiResponse = await botConfig_1.chatbotChain.invoke({
                     input: message,
                     history: messageHistory,
-                    user: { userId }
+                    user: { userId },
+                    systemPrompt: culinarySystemPrompt
                 });
             }
             // Save AI response
@@ -143,7 +160,7 @@ const processChatMessage = async (req, res) => {
             // Still save the error message in the chat
             const errorMessage = new aiChatMessage_1.Message({
                 chat: chatId,
-                content: "I'm sorry, I encountered an error processing your request. Please try again.",
+                content: "I'm sorry, I encountered an error processing your request. Please try again with a food-related question.",
                 role: 'assistant',
                 metadata: {
                     error: aiError instanceof Error ? aiError.message : "Unknown error"
@@ -291,37 +308,40 @@ async function generateResponseWithSearch(query, history, userId) {
             temperature: 0.5,
         });
         // Create a custom prompt for the search agent
-        const searchAgentPrompt = `You are ARIA, an advanced culinary AI assistant with web search capabilities.
-  
-  You have access to a web search tool that can help you find current, factual information to answer user questions accurately.
-  
-  When using the search tool:
-  1. Search for relevant, current information
-  2. Synthesize the information clearly and concisely
-  3. Cite sources when appropriate using [Source: URL]
-  4. Focus on culinary aspects when relevant
-  5. Be honest about limitations if search results are insufficient
-  
-  Previous conversation context:
-  ${history.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
-  
-  Current date: ${new Date().toLocaleDateString()}
-  
-  You have access to the following tools:
-  {tools}
-  
-  Use the following format:
-  Question: the input question you must answer
-  Thought: you should always think about what to do
-  Action: the action to take, should be one of [{tool_names}]
-  Action Input: the input to the action
-  Observation: the result of the action
-  ... (this Thought/Action/Action Input/Observation can repeat N times)
-  Thought: I now know the final answer
-  Final Answer: the final answer to the original input question
-  
-  Question: {input}
-  {agent_scratchpad}`;
+        const searchAgentPrompt = `You are ChefGPT, a specialized culinary AI assistant with web search capabilities.
+
+      You have access to a web search tool that can help you find current, factual information to answer user questions accurately about food and cooking.
+      
+      IMPORTANT: You ONLY discuss food, cooking, recipes, ingredients, nutrition, and dining experiences. 
+      If the user asks about non-food topics, politely redirect them back to culinary subjects.
+      
+      When using the search tool:
+      1. Search for relevant, current CULINARY information
+      2. Synthesize the information clearly and concisely
+      3. Cite sources when appropriate using [Source: URL]
+      4. Be honest about limitations if search results are insufficient
+      
+      Previous conversation context:
+      ${history.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n')}
+      
+      Current date: ${new Date().toLocaleDateString()}
+      
+      You have access to the following tools:
+      {tools}
+      
+      Use the following format:
+      Question: the input question you must answer
+      Thought: you should always think about what to do
+      Action: the action to take, should be one of [{tool_names}]
+      Action Input: the input to the action
+      Observation: the result of the action
+      ... (this Thought/Action/Action Input/Observation can repeat N times)
+      Thought: I now know the final answer
+      Final Answer: the final answer to the original input question
+      
+      Question: {input}
+      {agent_scratchpad}`;
+        // Update the fallbackDirectSearch prompt
         try {
             // Pull the React agent prompt from LangChain hub as fallback
             const prompt = await (0, hub_1.pull)("hwchase17/react").catch(() => {
@@ -482,4 +502,42 @@ function extractUrlsFromSearchResults(searchResults) {
         console.error("Error extracting URLs from search results:", error);
         return [];
     }
+}
+function isFoodRelatedQuery(query) {
+    const lowerQuery = query.toLowerCase();
+    // Food-related keywords
+    const foodKeywords = [
+        'food', 'recipe', 'cook', 'meal', 'ingredient', 'dish', 'cuisine', 'restaurant',
+        'bake', 'roast', 'fry', 'grill', 'boil', 'simmer', 'sauté', 'chop', 'slice', 'dice',
+        'kitchen', 'chef', 'taste', 'flavor', 'spice', 'herb', 'seasoning', 'marinade',
+        'breakfast', 'lunch', 'dinner', 'snack', 'appetizer', 'dessert', 'brunch',
+        'meat', 'vegetable', 'fruit', 'dairy', 'grain', 'seafood', 'fish', 'poultry',
+        'chicken', 'beef', 'pork', 'lamb', 'turkey', 'vegan', 'vegetarian', 'pescatarian',
+        'gluten', 'diet', 'nutrition', 'calorie', 'protein', 'carb', 'fat', 'vitamin',
+        'stove', 'oven', 'microwave', 'pot', 'pan', 'whisk', 'knife', 'blender', 'mixer',
+        'menu', 'dine', 'eat', 'drink', 'beverage', 'coffee', 'tea', 'wine', 'beer',
+        'fork', 'spoon', 'plate', 'bowl', 'cup', 'glass', 'mug', 'napkin', 'tablecloth',
+        'barbecue', 'picnic', 'buffet', 'catering', 'takeout', 'delivery', 'leftovers',
+        'fresh', 'frozen', 'canned', 'dried', 'organic', 'processed', 'preserved',
+        'hungry', 'thirsty', 'delicious', 'tasty', 'yummy', 'savory', 'sweet', 'bitter',
+        'sour', 'umami', 'spicy', 'mild', 'hot', 'temperature', 'texture', 'creamy'
+    ];
+    // Check if any food keyword is present in the query
+    for (const keyword of foodKeywords) {
+        if (lowerQuery.includes(keyword)) {
+            return true;
+        }
+    }
+    return false;
+}
+// Function to generate polite redirection messages
+function generateRedirectionMessage() {
+    const redirections = [
+        "I'm a culinary specialist, so I focus on food-related topics. Would you like to know about some recipes or cooking techniques instead?",
+        "As your food assistant, I can help with cooking, recipes, and nutrition. How about I help you plan a meal or find a recipe instead?",
+        "I specialize in culinary topics! I'd be happy to discuss food, recipes, cooking techniques, or nutrition with you instead.",
+        "I'm designed to be your culinary companion. Let's talk about food! Would you like some recipe ideas or cooking tips?",
+        "I'm here to assist with all things food-related. Instead, perhaps I can suggest a dish to cook or help with meal planning?"
+    ];
+    return redirections[Math.floor(Math.random() * redirections.length)];
 }

@@ -5,7 +5,6 @@ const botConfig_1 = require("./botConfig");
 const helpers_1 = require("./helpers");
 const aiChatMessage_1 = require("../../models/aiChatMessage");
 const intentDetectionSystem_1 = require("../../services/intentDetectionSystem");
-const messageHandler_1 = require("./messageHandler");
 const sendMessage = async (req, res) => {
     try {
         const userId = req.user._id;
@@ -66,12 +65,12 @@ const sendMessage = async (req, res) => {
             let aiResponse;
             // Route based on intent
             switch (intentResult.mode) {
-                case 'database':
-                    aiResponse = await messageHandler_1.MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
-                    break;
-                case 'smart_request':
-                    aiResponse = await messageHandler_1.MessageHandler.handleSmartRequest(intentResult, userContext, message);
-                    break;
+                // case 'database':
+                //   aiResponse = await MessageHandler.handleDatabaseQuery(intentResult, userContext, message);
+                //   break;
+                // case 'smart_request':
+                //   aiResponse = await MessageHandler.handleSmartRequest(intentResult, userContext, message);
+                //   break;
                 case 'general_cooking':
                 default:
                     // Use existing chatbot chain for general cooking advice

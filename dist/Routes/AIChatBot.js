@@ -13,9 +13,11 @@ const langchainController_1 = require("../controllers/AI-ChatBotController/langc
 const voiceController_1 = require("../controllers/AI-ChatBotController/voiceController");
 const imageMiddleware_1 = require("../middleware/imageMiddleware");
 const chatbotImages_1 = require("../controllers/AI-ChatBotController/chatbotImages");
+const culinaryFoodFocus_1 = require("../middleware/culinaryFoodFocus");
 const router = express_1.default.Router();
 exports.AIChatbotRouter = router;
 router.use(authMIddleware_1.verifyToken);
+router.use(culinaryFoodFocus_1.culinaryFocusMiddleware);
 router.post('/chats', chatController_1.createChat);
 router.get('/chats', chatController_1.getChats);
 router.get('/chats/:chatId/messages', chatController_1.getChatMessages);
@@ -31,6 +33,5 @@ router.get('/chats/:chatId/message', langchainController_1.processChatMessageGet
 router.post('/chats/:chatId/stream', chatController_1.processChatMessageStream);
 router.post('/chats/:chatId/voice', voiceController_1.processVoiceMessage);
 router.post('/chats/:chatId/voice-stream', voiceController_1.processVoiceMessageStream);
-// router.post('/test-intent', testIntentDetection);
 router.post('/chats/:chatId/image', authMIddleware_1.verifyToken, imageMiddleware_1.imageUpload.single('image'), chatbotImages_1.processImageMessage);
 router.post('/chats/:chatId/images', authMIddleware_1.verifyToken, imageMiddleware_1.imageUpload.array('images', 5), chatbotImages_1.processMultiImageMessage);

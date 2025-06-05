@@ -76,7 +76,7 @@ const MessageSchema = new mongoose_1.default.Schema({
         }],
     hasImages: {
         type: Boolean,
-        default: false // Add default value
+        default: true // Add default value
     },
     role: {
         type: String,
