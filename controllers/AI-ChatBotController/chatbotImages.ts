@@ -4,6 +4,7 @@ import axios from 'axios';
 import { MessageHandler } from '../AI-ChatBotController/messageHandler';
 import { Chat, Message } from '../../models/aiChatMessage';
 import { GeminiImageAnalyzer } from '../../services/imageAnalayzer';
+import { chatbotChain } from './botConfig';
 // Import the TensorFlow-based image analyzer
 const originalConsoleLog = console.log;
 
@@ -134,24 +135,30 @@ export const processImageMessage = async (req: any, res: any) => {
           images: [imageObject]
         });
         
-        console.log('Before save - hasImages:', userMessage.hasImages);
-        console.log('Before save - image count:', userMessage.images?.length);
+
         
         // Save the message
         await userMessage.save();
         
+        let aiResponse;
+        if (message && message.trim() !== '') {
+          // Execute the specific task mentioned in the message
+          aiResponse = await generateTaskSpecificResponse(message, imageAnalysis, chatId, userId);
+        } else {
+          // Generic response for images without specific instructions
+          aiResponse = generateGenericImageResponse(imageAnalysis);
+        }
+
         // Retrieve the saved message
         const savedMessage = await Message.findById(userMessage._id);
-        console.log('After save - hasImages:', savedMessage.hasImages);
-        console.log('After save - image count:', savedMessage.images?.length);
-        
+   
         // Update chat's last message and activity
         chat.lastMessage = message || "Shared an image";
         chat.updatedAt = new Date();
         await chat.save();
         
         // Generate AI response
-        let aiResponse = await generateAIResponseForImage(savedMessage, userId);
+         aiResponse = await generateAIResponseForImage(savedMessage, userId);
         
         // Save AI response
         const assistantMessage = new Message({
@@ -482,4 +489,63 @@ Some of them appear to be food dishes like ${foodImages.map(img => img.analysis?
     console.error("Error generating AI response for multiple images:", error);
     return `I received your ${message.images.length} images, but I'm having trouble analyzing them right now. How can I help you with these?`;
   }
+}
+
+
+// Add these functions to your chatbotImages.ts file
+
+/**
+ * Generate task-specific response for food image
+ */
+async function generateTaskSpecificResponse(message: string, imageAnalysis: any, chatId: string, userId: string): Promise<string> {
+  try {
+    // Convert message to lowercase for easier matching
+    const lowerMessage = message.toLowerCase();
+    
+    // Prepare the system prompt
+    const systemPrompt = `You are ChefGPT, a culinary AI assistant. A user has uploaded a food image and asked for a specific task.
+The image shows: ${imageAnalysis.description || 'a food item'}.
+Identified ingredients: ${(imageAnalysis.tags || []).join(', ')}.
+If recognized as a dish: ${imageAnalysis.foodRecognition?.isDish ? imageAnalysis.foodRecognition.dishName : 'Not identified as a specific dish'}.
+
+IMPORTANT: The user has asked you to perform a specific task with this image. DO NOT offer general options or ask what they want to do.
+Instead, DIRECTLY EXECUTE the specific task they mentioned. Be thorough and detailed in your response.`;
+
+    // Get the AI response using the chatbot chain
+    const response = await chatbotChain.invoke({
+      input: message,
+      systemPrompt: systemPrompt,
+      chatId: chatId,
+      user: { userId },
+      context: {
+        imageAnalysis: JSON.stringify(imageAnalysis)
+      }
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error generating task-specific response:", error);
+    return `I analyzed your food image, but encountered an error processing your specific request: "${message}". Could you try again with more details about what you'd like me to do with this dish?`;
+  }
+}
+
+/**
+ * Generate generic response for food image with no specific task
+ */
+function generateGenericImageResponse(imageAnalysis: any): string {
+  // Check if it's a food image
+  if (!imageAnalysis.foodRecognition?.isDish) {
+    return "This doesn't appear to be food. I specialize in culinary topics - could you share a food image instead?";
+  }
+  
+  const dishName = imageAnalysis.foodRecognition?.dishName || 'this dish';
+  const ingredients = (imageAnalysis.tags || []).join(', ');
+  
+  return `Thank you for sharing this image of ${dishName}! I can see ingredients like ${ingredients || 'various components'}.
+
+What would you like me to do with this food image?
+- Find similar recipes in my collection
+- Provide nutritional information about this dish
+- Create a recipe based on what I see in the image
+- Suggest modifications or variations`;
 }

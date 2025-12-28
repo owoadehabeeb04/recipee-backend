@@ -410,10 +410,65 @@ export const getUserRecipes = async (req: any, res: any) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Find recipes where the user is the creator
-    const query = { user: userId };
+    // Get filter parameters
+    const breakfast = req.query.breakfast === 'true';
+    const lunch = req.query.lunch === 'true';
+    const dinner = req.query.dinner === 'true';
+    const favorites = req.query.favorites === 'true';
 
-    // Count total
+    // Filter by meal type (breakfast, lunch, dinner)
+    const mealTypeFilters: string[] = [];
+    if (breakfast) mealTypeFilters.push('breakfast');
+    if (lunch) mealTypeFilters.push('lunch');
+    if (dinner) mealTypeFilters.push('dinner');
+
+    // Build query
+    let query: any = {};
+
+    // If filtering by favorites, get favorite recipe IDs first
+    if (favorites) {
+      const favoritesList = await FavoriteModel.find({ user: userId }).select('recipe');
+      const favoriteRecipeIds = favoritesList.map((fav: any) => fav.recipe);
+      
+      if (favoriteRecipeIds.length === 0) {
+        // No favorites found, return empty result
+        return res.status(200).json({
+          success: true,
+          message: 'Your recipes retrieved successfully',
+          data: [],
+          pagination: {
+            limit,
+            page,
+            total: 0,
+            pages: 0,
+          },
+          filters: {
+            breakfast: breakfast || undefined,
+            lunch: lunch || undefined,
+            dinner: dinner || undefined,
+            favorites: favorites || undefined,
+          },
+        });
+      }
+
+      // Filter by favorite recipe IDs
+      query._id = { $in: favoriteRecipeIds };
+
+      // Add category filter if meal type filters are specified
+      if (mealTypeFilters.length > 0) {
+        query.category = { $in: mealTypeFilters };
+      }
+    } else {
+      // Default: get recipes created by the user
+      query.user = userId;
+
+      // Add category filter if meal type filters are specified
+      if (mealTypeFilters.length > 0) {
+        query.category = { $in: mealTypeFilters };
+      }
+    }
+
+    // Count total matching recipes
     const total = await RecipeModel.countDocuments(query);
 
     // Get recipes
@@ -431,6 +486,12 @@ export const getUserRecipes = async (req: any, res: any) => {
         page,
         total,
         pages: Math.ceil(total / limit),
+      },
+      filters: {
+        breakfast: breakfast || undefined,
+        lunch: lunch || undefined,
+        dinner: dinner || undefined,
+        favorites: favorites || undefined,
       },
     });
   } catch (error) {

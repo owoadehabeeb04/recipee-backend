@@ -94,7 +94,7 @@ const MessageSchema = new mongoose.Schema({
       ret.hasImages = Array.isArray(ret.images) && ret.images.length > 0;
       
       // Ensure images is always an array
-      if (!ret.images) ret.images = [];
+      if (!ret.images) ret.images = [] as any;
       
       return ret;
     }
