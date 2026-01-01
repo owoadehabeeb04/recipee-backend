@@ -135,28 +135,46 @@ export const processChatMessage = async (req: any, res: any) => {
         }
       });
 
-    } catch (aiError) {
+    } catch (aiError: any) {
       console.error("AI processing error:", aiError);
+
+      // Check if it's a rate limit error
+      const isRateLimit = 
+        aiError?.status === 429 ||
+        aiError?.statusCode === 429 ||
+        aiError?.code === 429 ||
+        aiError?.response?.status === 429 ||
+        aiError?.message?.includes('429') ||
+        aiError?.message?.toLowerCase().includes('rate limit') ||
+        aiError?.message?.toLowerCase().includes('too many requests') ||
+        aiError?.message?.toLowerCase().includes('quota') ||
+        aiError?.message?.toLowerCase().includes('resource_exhausted');
 
       // Still save the error message in the chat
       const errorMessage = new Message({
         chat: chatId,
-        content: "I'm sorry, I encountered an error processing your request. Please try again with a food-related question.",
+        content: isRateLimit
+          ? "I'm currently experiencing high demand. Please wait a few minutes and try again. Thank you for your patience!"
+          : "I'm sorry, I encountered an error processing your request. Please try again with a food-related question.",
         role: 'assistant',
         metadata: {
-          error: aiError instanceof Error ? aiError.message : "Unknown error"
+          error: aiError instanceof Error ? aiError.message : "Unknown error",
+          isRateLimit
         }
       });
       await errorMessage.save();
 
-      // Return success because we did save the user message and an error response
-      return res.status(200).json({
-        success: true,
-        message: "Message saved but AI processing failed",
+      // Return appropriate status code
+      return res.status(isRateLimit ? 429 : 200).json({
+        success: !isRateLimit,
+        message: isRateLimit 
+          ? "Rate limit exceeded. Please wait a few minutes before trying again."
+          : "Message saved but AI processing failed",
         data: {
           userMessage: userMessage,
           aiMessage: errorMessage,
-          error: aiError instanceof Error ? aiError.message : "Unknown error"
+          error: aiError instanceof Error ? aiError.message : "Unknown error",
+          isRateLimit
         }
       });
     }

@@ -21,6 +21,12 @@ export const getAllRecipes = async (req: any, res: any) => {
     const search = req.query.search as string;
     const category = req.query.category as string;
     const sort = (req.query.sort as string) || 'newest';
+    
+    // Get meal type filter parameters
+    const breakfast = req.query.breakfast === 'true';
+    const lunch = req.query.lunch === 'true';
+    const dinner = req.query.dinner === 'true';
+    const favorites = req.query.favorites === 'true';
 
     const userRole = req.user?.role || 'public';
     
@@ -51,17 +57,75 @@ export const getAllRecipes = async (req: any, res: any) => {
       query.isPrivate = false;
     }
 
-    // Add category filter if provided
-    if (category) {
+    // Handle favorites filter
+    if (favorites && userId) {
+      const favoritesList = await FavoriteModel.find({ user: userId }).select('recipe');
+      const favoriteRecipeIds = favoritesList.map((fav: any) => fav.recipe);
+      
+      if (favoriteRecipeIds.length === 0) {
+        // No favorites found, return empty result
+        return res.status(200).json({
+          success: true,
+          status: 200,
+          message: 'Recipes retrieved successfully',
+          data: [],
+          pagination: {
+            limit,
+            page,
+            total: 0,
+            pages: 0,
+          },
+        });
+      }
+      
+      // Add favorite recipe IDs to query
       if (query.$or) {
         query = {
           $and: [
             { $or: query.$or },
-            { category }
+            { _id: { $in: favoriteRecipeIds } }
           ]
         };
       } else {
-        query.category = category;
+        query._id = { $in: favoriteRecipeIds };
+      }
+    }
+
+    // Filter by meal type (breakfast, lunch, dinner)
+    const mealTypeFilters: string[] = [];
+    if (breakfast) mealTypeFilters.push('breakfast');
+    if (lunch) mealTypeFilters.push('lunch');
+    if (dinner) mealTypeFilters.push('dinner');
+
+    // Add category filter if provided (either from category param or meal type filters)
+    const categoryFilter = category || (mealTypeFilters.length > 0 ? mealTypeFilters : null);
+    
+    if (categoryFilter) {
+      if (Array.isArray(categoryFilter) || mealTypeFilters.length > 0) {
+        const categoriesToFilter = Array.isArray(categoryFilter) ? categoryFilter : mealTypeFilters;
+        if (query.$and) {
+          query.$and.push({ category: { $in: categoriesToFilter } });
+        } else if (query.$or) {
+          query = {
+            $and: [
+              { $or: query.$or },
+              { category: { $in: categoriesToFilter } }
+            ]
+          };
+        } else {
+          query.category = { $in: categoriesToFilter };
+        }
+      } else {
+        if (query.$or) {
+          query = {
+            $and: [
+              { $or: query.$or },
+              { category: categoryFilter }
+            ]
+          };
+        } else {
+          query.category = categoryFilter;
+        }
       }
     }
 

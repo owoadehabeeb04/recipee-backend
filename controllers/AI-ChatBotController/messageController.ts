@@ -134,21 +134,38 @@ export const sendMessage = async (req: any, res: any) => {
           remainingPairs
         }
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating AI response:", error);
       
-      // Save error message
+      // Check if it's a rate limit error
+      const isRateLimit = 
+        error?.status === 429 ||
+        error?.statusCode === 429 ||
+        error?.code === 429 ||
+        error?.response?.status === 429 ||
+        error?.message?.includes('429') ||
+        error?.message?.toLowerCase().includes('rate limit') ||
+        error?.message?.toLowerCase().includes('too many requests') ||
+        error?.message?.toLowerCase().includes('quota') ||
+        error?.message?.toLowerCase().includes('resource_exhausted');
+      
+      // Save error message with appropriate content
       const errorMessage = new Message({
         chat: chatId,
-        content: "I'm sorry, I encountered an error while processing your request. Please try again.",
+        content: isRateLimit
+          ? "I'm currently experiencing high demand. Please wait a few minutes and try again. Thank you for your patience!"
+          : "I'm sorry, I encountered an error while processing your request. Please try again.",
         role: 'assistant'
       });
       await errorMessage.save();
       
-      return res.status(500).json({
+      return res.status(isRateLimit ? 429 : 500).json({
         success: false,
-        message: "Failed to generate AI response",
+        message: isRateLimit 
+          ? "Rate limit exceeded. Please wait a few minutes before trying again."
+          : "Failed to generate AI response",
         error: error instanceof Error ? error.message : "Unknown error",
+        isRateLimit,
         data: {
           userMessage: userMessage,
           aiMessage: errorMessage
